@@ -1,0 +1,21 @@
+# CLion specific files
+../.idea/
+cmake-build-*/
+*.iml
+*.ipr
+*.iws
+
+# Build artifacts
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# Other common ignore patterns
+*.log
+*.swp
+*.bak
