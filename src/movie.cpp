@@ -4,7 +4,6 @@
 #include <sstream>
 #include <algorithm>
 
-// Основной конструктор с множественными жанрами
 Movie::Movie(int id, const std::string& title, double rating, int year,
              const std::vector<std::string>& genres, const std::string& director,
              const std::string& description, const std::string& posterPath,
@@ -13,7 +12,6 @@ Movie::Movie(int id, const std::string& title, double rating, int year,
       genres(genres), director(director), description(description),
       posterPath(posterPath), country(country), actors(actors), duration(duration) {}
 
-// Конструктор для обратной совместимости (один жанр)
 Movie::Movie(int id, const std::string& title, double rating, int year,
              const std::string& genre, const std::string& director,
              const std::string& description)
@@ -23,6 +21,94 @@ Movie::Movie(int id, const std::string& title, double rating, int year,
     if (!genre.empty()) {
         genres.push_back(genre);
     }
+}
+
+int Movie::getId() const {
+    return id;
+}
+
+const std::string& Movie::getTitle() const {
+    return title;
+}
+
+double Movie::getRating() const {
+    return rating;
+}
+
+int Movie::getYear() const {
+    return year;
+}
+
+const std::vector<std::string>& Movie::getGenres() const {
+    return genres;
+}
+
+const std::string& Movie::getDirector() const {
+    return director;
+}
+
+const std::string& Movie::getDescription() const {
+    return description;
+}
+
+const std::string& Movie::getPosterPath() const {
+    return posterPath;
+}
+
+const std::string& Movie::getCountry() const {
+    return country;
+}
+
+const std::string& Movie::getActors() const {
+    return actors;
+}
+
+int Movie::getDuration() const {
+    return duration;
+}
+
+void Movie::setId(int id) {
+    this->id = id;
+}
+
+void Movie::setTitle(const std::string& title) {
+    this->title = title;
+}
+
+void Movie::setRating(double rating) {
+    this->rating = rating;
+}
+
+void Movie::setYear(int year) {
+    this->year = year;
+}
+
+void Movie::setGenres(const std::vector<std::string>& genres) {
+    this->genres = genres;
+}
+
+void Movie::setDirector(const std::string& director) {
+    this->director = director;
+}
+
+void Movie::setDescription(const std::string& description) {
+    this->description = description;
+}
+
+void Movie::setPosterPath(const std::string& path) {
+    this->posterPath = path;
+}
+
+void Movie::setCountry(const std::string& country) {
+    this->country = country;
+}
+
+void Movie::setActors(const std::string& actors) {
+    this->actors = actors;
+}
+
+void Movie::setDuration(int duration) {
+    this->duration = duration;
 }
 
 void Movie::addGenre(const std::string& genre) {
@@ -73,7 +159,6 @@ std::string Movie::toString() const {
     std::ostringstream oss;
     oss << id << "|" << title << "|" << rating << "|" << year << "|";
     
-    // Сохраняем жанры через точку с запятой
     for (size_t i = 0; i < genres.size(); ++i) {
         if (i > 0) oss << ";";
         oss << genres[i];
@@ -104,7 +189,6 @@ Movie Movie::fromString(const std::string& data) {
         if (!genreStr.empty()) {
             std::istringstream genreStream(genreStr);
             std::string genre;
-            // Проверяем, есть ли точка с запятой (новый формат)
             if (genreStr.find(';') != std::string::npos) {
                 while (std::getline(genreStream, genre, ';')) {
                     if (!genre.empty()) {
@@ -112,7 +196,6 @@ Movie Movie::fromString(const std::string& data) {
                     }
                 }
             } else {
-                // Старый формат - один жанр
                 genres.push_back(genreStr);
             }
         }
@@ -131,7 +214,6 @@ Movie Movie::fromString(const std::string& data) {
     return Movie(0, "", 0.0, 0, std::vector<std::string>(), "", "", "", "", "", 0);
 }
 
-// Перегрузка операций
 bool Movie::operator==(const Movie& other) const {
     return id == other.id;
 }
@@ -148,7 +230,6 @@ bool Movie::operator>(const Movie& other) const {
     return other < *this;
 }
 
-// Дружественная функция для вывода
 std::ostream& operator<<(std::ostream& os, const Movie& movie) {
     os << movie.toString();
     return os;

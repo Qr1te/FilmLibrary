@@ -16,6 +16,11 @@
 #include <QImage>
 #include <QIODevice>
 #include <QImageReader>
+#include <QDesktopServices>
+#include <QUrl>
+#include <QProcess>
+#include <QDialog>
+#include <QTextEdit>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -24,20 +29,17 @@ MainWindow::MainWindow(QWidget* parent)
     setupModelsAndViews();
     populateGenres();
     
-    // Проверяем, есть ли фильмы
     if (manager.getMoviesCount() == 0) {
-        // Если нет фильмов, создаем примерный файл
         try {
             manager.createSampleMoviesFile();
         } catch (...) {
-            // Игнорируем ошибки
         }
     }
     
     populateAllMovies(manager.getAllMovies());
     populateFavorites();
     populateCollections();
-    updateStats();
+    populatePlayer();
 
     connect(ui->searchButton, &QPushButton::clicked, this, &MainWindow::handleSearch);
     connect(ui->resetFiltersButton, &QPushButton::clicked, this, &MainWindow::handleReset);
@@ -49,8 +51,6 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->actionCreateCollection, &QAction::triggered, this, &MainWindow::handleCreateCollection);
     connect(ui->actionManageCollections, &QAction::triggered, this, &MainWindow::handleManageCollections);
     connect(ui->collectionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::handleCollectionChanged);
-
-    // Удалены соединения для таблиц, так как теперь используем карточки
 }
 
 MainWindow::~MainWindow() {
@@ -58,7 +58,6 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::setupModelsAndViews() {
-    // Установка серо-оранжевой цветовой схемы
     setStyleSheet(
         "QMainWindow { background-color: #2b2b2b; }"
         "QWidget { background-color: #2b2b2b; color: #e0e0e0; }"
@@ -76,7 +75,6 @@ void MainWindow::setupModelsAndViews() {
         "QTextEdit { background-color: #3a3a3a; color: #e0e0e0; border: 1px solid #555; border-radius: 4px; font-size: 11pt; line-height: 1.4; }"
         "QStatusBar { background-color: #1e1e1e; color: #e0e0e0; }"
         "QToolBar { background-color: #1e1e1e; border: none; }"
-        // Стили для детальной страницы
         "QLabel[name=\"titleValue\"] { font-size: 16pt; font-weight: bold; color: #ff6b35; padding: 5px 0px; }"
         "QLabel[name=\"titleLabel\"], QLabel[name=\"ratingLabel\"], QLabel[name=\"yearLabel\"], QLabel[name=\"genreLabel\"], QLabel[name=\"directorLabel\"] { font-size: 11pt; font-weight: bold; color: #bbb; padding: 3px 0px; }"
         "QLabel[name=\"ratingValue\"] { font-size: 14pt; font-weight: bold; color: #46d369; padding: 3px 0px; }"
@@ -88,7 +86,6 @@ void MainWindow::setupModelsAndViews() {
 void MainWindow::populateGenres() {
     ui->genreComboBox->clear();
     ui->genreComboBox->addItem("");
-    // Collect unique genres from all movies (поддержка множественных жанров)
     QSet<QString> genres;
     for (const auto& m : manager.getAllMovies()) {
         const auto& movieGenres = m.getGenres();
@@ -102,11 +99,10 @@ void MainWindow::populateGenres() {
 }
 
 QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
-    // Создаем карточку фильма
     if (!parent) {
-        parent = ui->scrollAreaWidgetContentsAll;  // По умолчанию для All Movies
+        parent = ui->scrollAreaWidgetContentsAll;
     }
-    QWidget* card = new QWidget(parent);  // Указываем родителя
+    QWidget* card = new QWidget(parent);
     card->setFixedSize(320, 580);
     card->setStyleSheet(
         "QWidget { background-color: #3a3a3a; border-radius: 8px; border: 1px solid #555; }"
@@ -117,18 +113,13 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
     cardLayout->setContentsMargins(10, 10, 10, 10);
     cardLayout->setSpacing(8);
 
-    // Постер
     QLabel* posterLabel = new QLabel();
     QString posterPath = QString::fromStdString(movie.getPosterPath());
     
-    // Получаем директорию исполняемого файла
     QString appDir = QApplication::applicationDirPath();
     QString currentDir = QDir::currentPath();
     
-    // Извлекаем имя файла из пути
     QString fileName = QFileInfo(posterPath).fileName();
-    
-    // Отладочная информация (только для первого фильма, чтобы не засорять вывод)
     static int posterDebugCount = 0;
     bool debugThis = (posterDebugCount++ < 2);
     
@@ -140,11 +131,8 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
         qDebug() << "Current dir:" << currentDir;
     }
     
-    // Пробуем разные пути для поиска постеров
     QStringList searchDirs;
     QString sep = QDir::separator();
-    
-    // Преобразуем пути с / в правильные для Windows
     auto addDir = [&searchDirs](const QString& path) {
         QString normalized = QDir::cleanPath(path);
         if (!normalized.isEmpty() && !searchDirs.contains(normalized)) {
@@ -152,24 +140,20 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
         }
     };
     
-    // Добавляем все возможные варианты путей
-    addDir(appDir + sep + "posters");  // posters рядом с exe (самый частый случай)
-    addDir(appDir + sep + ".." + sep + "posters");  // posters на уровень выше
-    addDir(appDir + sep + ".." + sep + ".." + sep + "posters");  // posters на два уровня выше
-    addDir(currentDir + sep + "posters");  // posters в текущей директории
-    addDir(currentDir + sep + ".." + sep + "posters");  // posters на уровень выше от текущей
-    addDir("posters");  // posters в текущей директории (короткий путь)
-    addDir(".." + sep + "posters");  // Относительно рабочей директории
-    addDir(".." + sep + ".." + sep + "posters");  // Еще выше
-    addDir(appDir);  // Директория exe (может быть posters рядом)
+    addDir(appDir + sep + "posters");
+    addDir(appDir + sep + ".." + sep + "posters");
+    addDir(appDir + sep + ".." + sep + ".." + sep + "posters");
+    addDir(currentDir + sep + "posters");
+    addDir(currentDir + sep + ".." + sep + "posters");
+    addDir("posters");
+    addDir(".." + sep + "posters");
+    addDir(".." + sep + ".." + sep + "posters");
+    addDir(appDir);
     
-    // Также пробуем абсолютные пути от корня проекта
     QDir projectRoot = QDir(currentDir);
-    if (projectRoot.cdUp()) {  // Переходим на уровень выше
+    if (projectRoot.cdUp()) {
         addDir(projectRoot.absolutePath() + sep + "posters");
     }
-    
-    // Убираем дубликаты и несуществующие директории
     QStringList validDirs;
     for (const QString& dir : searchDirs) {
         QDir testDir(dir);
@@ -179,7 +163,6 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
                 validDirs << absPath;
                 if (debugThis) {
                     qDebug() << "Found posters dir:" << absPath;
-                    // Показываем файлы в этой директории для отладки (первые 3)
                     QFileInfoList files = testDir.entryInfoList(QStringList() << "*.png", QDir::Files);
                     if (files.size() > 0) {
                         qDebug() << "  Files in dir:" << files.size() << "First:" << files.first().fileName();
@@ -204,7 +187,6 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
     QString fullPath;
     bool found = false;
     
-    // Сначала пробуем найти файл по точному пути
     QStringList possiblePaths;
     possiblePaths << posterPath;
     possiblePaths << appDir + sep + posterPath;
@@ -214,18 +196,15 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
     possiblePaths << "posters" + sep + fileName;
     possiblePaths << ".." + sep + "posters" + sep + fileName;
     
-    // Также пробуем все найденные директории posters
     for (const QString& dir : searchDirs) {
         possiblePaths << dir + sep + fileName;
     }
     
     for (const QString& path : possiblePaths) {
         QString normalizedPath = QDir::cleanPath(path);
-        // Преобразуем в абсолютный путь
         if (!QDir::isAbsolutePath(normalizedPath)) {
             normalizedPath = QDir(currentDir).absoluteFilePath(normalizedPath);
         }
-        // Проверяем существование
         if (QFile::exists(normalizedPath)) {
             fullPath = QDir::cleanPath(normalizedPath);
             found = true;
@@ -236,13 +215,11 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
         }
     }
     
-    // Если не нашли по точному пути, ищем по имени файла в разных директориях
     if (!found && !searchDirs.isEmpty()) {
         for (const QString& dir : searchDirs) {
             QDir searchDir(dir);
             if (searchDir.exists()) {
                 QString testPath;
-                // Пробуем точное имя файла (только если fileName не пустой)
                 if (!fileName.isEmpty()) {
                     testPath = searchDir.absoluteFilePath(fileName);
                     if (debugThis) {
@@ -258,7 +235,6 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
                     }
                 }
                 
-                // Если имя файла содержит путь (например, "posters/film.png"), пробуем без "posters/"
                 QString simpleFileName = fileName;
                 if (simpleFileName.contains(sep)) {
                     simpleFileName = QFileInfo(simpleFileName).fileName();
@@ -267,21 +243,16 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
                 if (QFile::exists(testPath)) {
                     fullPath = testPath;
                     found = true;
-                    // qDebug() << "Found poster by simple name:" << fullPath;
                     break;
                 }
                 
-                // Пробуем найти файлы, содержащие название фильма
                 QString movieTitle = QString::fromStdString(movie.getTitle());
                 QFileInfoList files = searchDir.entryInfoList(QStringList() << "*.png" << "*.jpg" << "*.jpeg", 
                                                                QDir::Files);
                 for (const QFileInfo& fileInfo : files) {
                     QString baseName = fileInfo.baseName();
-                    // Проверяем, содержит ли имя файла название фильма (без учета регистра и пробелов)
                     QString normalizedBaseName = baseName.toLower().remove(' ').remove('-').remove('_');
                     QString normalizedTitle = movieTitle.toLower().remove(' ').remove('-').remove('_');
-                    
-                    // Более гибкое сравнение
                     if (normalizedBaseName == normalizedTitle ||
                         normalizedBaseName.contains(normalizedTitle) || 
                         normalizedTitle.contains(normalizedBaseName) ||
@@ -289,7 +260,6 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
                         movieTitle.toLower().contains(baseName.toLower())) {
                         fullPath = fileInfo.absoluteFilePath();
                         found = true;
-                        // qDebug() << "Found poster by title match:" << fullPath;
                         break;
                     }
                 }
@@ -298,7 +268,6 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
         }
     }
     
-    // Если все еще не нашли, пробуем прямой поиск всех PNG файлов
     if (!found) {
         for (const QString& dir : searchDirs) {
             QDir searchDir(dir);
@@ -306,10 +275,7 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
                 QStringList filters;
                 filters << "*.png" << "*.PNG" << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG";
                 QFileInfoList files = searchDir.entryInfoList(filters, QDir::Files);
-                // Если в папке только один файл или мало файлов, пробуем взять первый
-                // Это не идеально, но может помочь для тестирования
                 if (!files.isEmpty() && files.size() <= 100) {
-                    // Пробуем найти хотя бы какой-то постер для теста
                     fullPath = files.first().absoluteFilePath();
                     found = true;
                     break;
@@ -318,11 +284,8 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
         }
     }
     
-    // Преобразуем найденный путь в абсолютный перед использованием
     if (found && !fullPath.isEmpty()) {
-        // Убеждаемся, что путь абсолютный
         if (!QDir::isAbsolutePath(fullPath)) {
-            // Если это относительный путь, пробуем разные базовые директории
             QString testPath1 = QDir(currentDir).absoluteFilePath(fullPath);
             QString testPath2 = QDir(appDir).absoluteFilePath(fullPath);
             if (QFile::exists(testPath1)) {
@@ -330,7 +293,7 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
             } else if (QFile::exists(testPath2)) {
                 fullPath = testPath2;
             } else {
-                fullPath = testPath1;  // Используем по умолчанию
+                fullPath = testPath1;
             }
         }
         fullPath = QDir::cleanPath(fullPath);
@@ -341,13 +304,10 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
                 qDebug() << "File exists:" << QFile::exists(fullPath);
                 qDebug() << "File size:" << QFileInfo(fullPath).size();
             }
-            // Используем QImageReader для более надежной загрузки с диагностикой ошибок
             QString absolutePath = QFileInfo(fullPath).absoluteFilePath();
             
             QImage image;
             bool loaded = false;
-            
-            // Метод 1: QImageReader (наиболее надежный)
             QImageReader reader(absolutePath);
             if (reader.canRead()) {
                 reader.setAutoTransform(true);
@@ -369,7 +329,6 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
                 }
             }
             
-            // Метод 2: Прямой QImage конструктор
             if (!loaded) {
                 image = QImage(absolutePath);
                 if (!image.isNull()) {
@@ -380,14 +339,12 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
                 }
             }
             
-            // Метод 3: Чтение файла и loadFromData с явным указанием формата
             if (!loaded) {
                 QFile file(absolutePath);
                 if (file.open(QIODevice::ReadOnly)) {
                     QByteArray imageData = file.readAll();
                     file.close();
                     
-                    // Пробуем разные форматы
                     QStringList formats = {"PNG", "JPEG", "JPG", "BMP", "GIF"};
                     for (const QString& fmt : formats) {
                         QImage image2;
@@ -402,7 +359,6 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
                     }
                     
                     if (!loaded) {
-                        // Пробуем без указания формата (автоопределение)
                         if (image.loadFromData(imageData)) {
                             loaded = true;
                             if (debugThis) {
@@ -424,7 +380,6 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
                 }
             }
             
-            // Если загрузили, отображаем
             if (loaded && !image.isNull()) {
                 QPixmap pixmap = QPixmap::fromImage(image);
                 pixmap = pixmap.scaled(300, 440, Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -459,13 +414,11 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
     posterLabel->setScaledContents(false);
     cardLayout->addWidget(posterLabel);
 
-    // Название
     QLabel* titleLabel = new QLabel(QString::fromStdString(movie.getTitle()));
     titleLabel->setStyleSheet("font-size: 16px; font-weight: bold; color: #ff6b35;");
     titleLabel->setWordWrap(true);
     cardLayout->addWidget(titleLabel);
 
-    // Информация (год, страна, жанр)
     QString infoText = QString("%1, %2 • %3")
         .arg(movie.getYear())
         .arg(QString::fromStdString(movie.getCountry()))
@@ -475,13 +428,11 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
     infoLabel->setWordWrap(true);
     cardLayout->addWidget(infoLabel);
 
-    // Режиссер
-    QLabel* directorLabel = new QLabel(QString("Режиссёр: %1").arg(QString::fromStdString(movie.getDirector())));
+    QLabel* directorLabel = new QLabel(QString("Director: %1").arg(QString::fromStdString(movie.getDirector())));
     directorLabel->setStyleSheet("font-size: 11px; color: #bbb;");
     directorLabel->setWordWrap(true);
     cardLayout->addWidget(directorLabel);
 
-    // Рейтинг
     QHBoxLayout* ratingLayout = new QHBoxLayout();
     QLabel* ratingLabel = new QLabel(QString::number(movie.getRating(), 'f', 1));
     ratingLabel->setStyleSheet("font-size: 18px; font-weight: bold; color: #46d369;");
@@ -489,14 +440,10 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
     ratingLayout->addStretch();
     cardLayout->addLayout(ratingLayout);
 
-    // Кнопки
     QHBoxLayout* buttonsLayout = new QHBoxLayout();
-    
-    // Кнопка избранного
     QPushButton* favoriteBtn = new QPushButton("★");
     favoriteBtn->setFixedSize(35, 35);
-    favoriteBtn->setToolTip("Добавить в избранное");
-    // Проверяем, уже ли фильм в избранном
+    favoriteBtn->setToolTip("Add to favorites");
     bool isFav = manager.isFavorite(movie.getId());
     if (isFav) {
         favoriteBtn->setStyleSheet("background-color: #ffd700; color: #000; font-size: 18px; font-weight: bold; border-radius: 4px; border: none;");
@@ -504,13 +451,12 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
         favoriteBtn->setStyleSheet("background-color: #555; color: #ccc; font-size: 18px; border-radius: 4px; border: 1px solid #777;");
     }
     
-    // Кнопка дополнительных опций
     QPushButton* moreBtn = new QPushButton("⋯");
     moreBtn->setFixedSize(35, 35);
-    moreBtn->setToolTip("Дополнительные опции");
+    moreBtn->setToolTip("More options");
     moreBtn->setStyleSheet("background-color: #555; color: #ccc; font-size: 22px; border-radius: 4px; border: 1px solid #777;");
     
-    QPushButton* infoBtn = new QPushButton("Информация");
+    QPushButton* infoBtn = new QPushButton("Info");
     infoBtn->setStyleSheet(
         "background-color: #ff6b35;"
         "color: white; font-weight: bold; padding: 8px; border-radius: 4px; border: none;"
@@ -522,33 +468,28 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
     buttonsLayout->addWidget(infoBtn);
     cardLayout->addLayout(buttonsLayout);
 
-    // Сохраняем ID фильма в карточке для дальнейшего использования
     card->setProperty("movieId", movie.getId());
-
-    // Подключаем сигналы
     connect(favoriteBtn, &QPushButton::clicked, [this, movie, favoriteBtn]() {
         try {
             if (manager.isFavorite(movie.getId())) {
                 manager.removeFromFavorites(movie.getId());
                 favoriteBtn->setStyleSheet("background-color: #555; color: #ccc; font-size: 18px; border-radius: 4px; border: 1px solid #777;");
-                ui->statusbar->showMessage("Удалено из избранного", 2000);
+                ui->statusbar->showMessage("Removed from favorites", 2000);
             } else {
                 manager.addToFavorites(movie.getId());
                 favoriteBtn->setStyleSheet("background-color: #ffd700; color: #000; font-size: 18px; font-weight: bold; border-radius: 4px; border: none;");
-                ui->statusbar->showMessage("Добавлено в избранное", 2000);
+                ui->statusbar->showMessage("Added to favorites", 2000);
             }
-            updateStats();
-            populateFavorites();  // Обновляем вкладку избранных
+            populateFavorites();
         } catch (const std::exception& e) {
-            QMessageBox::warning(this, "Ошибка", e.what());
+            QMessageBox::warning(this, "Error", e.what());
         }
     });
 
     connect(moreBtn, &QPushButton::clicked, [this, movie, moreBtn]() {
         QMenu menu;
-        QAction* addToCollectionAction = menu.addAction("Добавить в коллекцию");
+        QAction* addToCollectionAction = menu.addAction("Add to collection");
         
-        // Проверяем, в каких коллекциях находится фильм
         auto* collManager = manager.getCollectionManager();
         QStringList collectionsWithMovie;
         if (collManager) {
@@ -556,7 +497,7 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
             for (const auto& name : allCollections) {
                 MovieCollection* collection = collManager->getCollection(name);
                 if (collection && collection->containsMovie(movie.getId())) {
-                    collectionsWithMovie << QString::fromStdString(name);
+                    collectionsWithMovie << QString::fromUtf8(name.c_str(), name.length());
                 }
             }
         }
@@ -564,94 +505,171 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
         QAction* removeFromCollectionAction = nullptr;
         if (!collectionsWithMovie.isEmpty()) {
             menu.addSeparator();
-            removeFromCollectionAction = menu.addAction("Удалить из коллекции");
+            removeFromCollectionAction = menu.addAction("Remove from collection");
         }
         
         menu.addSeparator();
-        QAction* viewDetailsAction = menu.addAction("Подробности");
         QAction* selectedAction = menu.exec(moreBtn->mapToGlobal(QPoint(0, moreBtn->height())));
         
         if (selectedAction == addToCollectionAction) {
-            // Получаем список коллекций
             auto collections = manager.getAllCollectionNames();
             if (collections.empty()) {
-                QMessageBox::information(this, "Коллекции", "Сначала создайте коллекцию через меню.");
+                QMessageBox::information(this, "Collections", "Please create a collection first through the menu.");
             } else {
                 QStringList items;
                 for (const auto& name : collections) {
-                    items << QString::fromStdString(name);
+                    items << QString::fromUtf8(name.c_str(), name.length());
                 }
                 bool ok;
-                QString selected = QInputDialog::getItem(this, "Выбор коллекции",
-                                                        "Выберите коллекцию:", items, 0, false, &ok);
+                QString selected = QInputDialog::getItem(this, "Select Collection",
+                                                        "Choose collection:", items, 0, false, &ok);
                 if (ok && !selected.isEmpty()) {
                     if (collManager) {
-                        MovieCollection* collection = collManager->getCollection(selected.toStdString());
+                        QByteArray utf8Selected = selected.toUtf8();
+                        MovieCollection* collection = collManager->getCollection(std::string(utf8Selected.constData(), utf8Selected.length()));
                         if (collection) {
                             try {
                                 collection->addMovie(movie);
-                                QMessageBox::information(this, "Успех", 
-                                    QString("Фильм добавлен в коллекцию '%1'").arg(selected));
-                                populateCollections();  // Обновляем список коллекций
-                                handleCollectionChanged();  // Обновляем текущую коллекцию
+                                QMessageBox::information(this, "Success", 
+                                    QString("Movie added to collection '%1'").arg(selected));
+                                populateCollections();
+                                handleCollectionChanged();
                             } catch (const std::exception& e) {
-                                QMessageBox::warning(this, "Ошибка", e.what());
+                                QMessageBox::warning(this, "Error", e.what());
                             }
                         }
                     }
                 }
             }
         } else if (selectedAction == removeFromCollectionAction) {
-            // Показываем список коллекций, из которых можно удалить
             if (collectionsWithMovie.size() == 1) {
-                // Если фильм только в одной коллекции, удаляем сразу
                 QString collectionName = collectionsWithMovie.first();
                 if (collManager) {
                     MovieCollection* collection = collManager->getCollection(collectionName.toStdString());
                     if (collection) {
                         try {
                             collection->removeMovie(movie.getId());
-                            QMessageBox::information(this, "Успех", 
-                                QString("Фильм удален из коллекции '%1'").arg(collectionName));
+                            QMessageBox::information(this, "Success", 
+                                QString("Movie removed from collection '%1'").arg(collectionName));
                             populateCollections();
                             handleCollectionChanged();
                         } catch (const std::exception& e) {
-                            QMessageBox::warning(this, "Ошибка", e.what());
+                            QMessageBox::warning(this, "Error", e.what());
                         }
                     }
                 }
             } else {
-                // Если фильм в нескольких коллекциях, предлагаем выбрать
                 bool ok;
-                QString selected = QInputDialog::getItem(this, "Удаление из коллекции",
-                                                        "Выберите коллекцию, из которой удалить фильм:", 
+                QString selected = QInputDialog::getItem(this, "Remove from Collection",
+                                                        "Select collection to remove movie from:", 
                                                         collectionsWithMovie, 0, false, &ok);
                 if (ok && !selected.isEmpty()) {
                     if (collManager) {
-                        MovieCollection* collection = collManager->getCollection(selected.toStdString());
+                        QByteArray utf8Selected = selected.toUtf8();
+                        MovieCollection* collection = collManager->getCollection(std::string(utf8Selected.constData(), utf8Selected.length()));
                         if (collection) {
                             try {
                                 collection->removeMovie(movie.getId());
-                                QMessageBox::information(this, "Успех", 
-                                    QString("Фильм удален из коллекции '%1'").arg(selected));
+                                QMessageBox::information(this, "Success", 
+                                    QString("Movie removed from collection '%1'").arg(selected));
                                 populateCollections();
                                 handleCollectionChanged();
                             } catch (const std::exception& e) {
-                                QMessageBox::warning(this, "Ошибка", e.what());
+                                QMessageBox::warning(this, "Error", e.what());
                             }
                         }
                     }
                 }
             }
-        } else if (selectedAction == viewDetailsAction) {
-            updateDetailsFromSelection(movie.getId());
-            ui->tabWidget->setCurrentWidget(ui->tabDetails);
         }
     });
 
     connect(infoBtn, &QPushButton::clicked, [this, movie]() {
-        updateDetailsFromSelection(movie.getId());
-        ui->tabWidget->setCurrentWidget(ui->tabDetails);
+        QDialog* dialog = new QDialog(this);
+        dialog->setWindowTitle("Movie Information");
+        dialog->setMinimumSize(1100, 750);
+        dialog->setStyleSheet(
+            "QDialog { background-color: #2b2b2b; }"
+            "QLabel { color: #e0e0e0; background-color: transparent; }"
+            "QTextEdit { background-color: #3a3a3a; color: #e0e0e0; border: 1px solid #555; border-radius: 4px; }"
+            "QPushButton { background-color: #ff6b35; color: white; border: none; padding: 8px 20px; border-radius: 4px; font-weight: bold; }"
+            "QPushButton:hover { background-color: #ff8555; }"
+        );
+        
+        QHBoxLayout* mainLayout = new QHBoxLayout(dialog);
+        mainLayout->setSpacing(20);
+        mainLayout->setContentsMargins(20, 20, 20, 20);
+        
+        QLabel* posterLabel = new QLabel();
+        posterLabel->setMinimumSize(450, 675);
+        posterLabel->setMaximumSize(450, 675);
+        posterLabel->setAlignment(Qt::AlignCenter);
+        posterLabel->setStyleSheet("border: 1px solid #555; border-radius: 4px; background-color: #3a3a3a;");
+        loadPosterToLabel(posterLabel, movie);
+        mainLayout->addWidget(posterLabel);
+        
+        QVBoxLayout* infoLayout = new QVBoxLayout();
+        infoLayout->setSpacing(10);
+        
+        QLabel* titleLabel = new QLabel(QString::fromStdString(movie.getTitle()));
+        titleLabel->setStyleSheet("font-size: 20pt; font-weight: bold; color: #ff6b35;");
+        titleLabel->setWordWrap(true);
+        infoLayout->addWidget(titleLabel);
+        
+        QLabel* ratingLabel = new QLabel(QString("Rating: %1").arg(movie.getRating(), 0, 'f', 1));
+        ratingLabel->setStyleSheet("font-size: 14pt; font-weight: bold; color: #46d369;");
+        infoLayout->addWidget(ratingLabel);
+        
+        QLabel* yearLabel = new QLabel(QString("Year: %1").arg(movie.getYear()));
+        yearLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
+        infoLayout->addWidget(yearLabel);
+        
+        QLabel* genreLabel = new QLabel(QString("Genre: %1").arg(QString::fromStdString(movie.getGenreString())));
+        genreLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
+        genreLabel->setWordWrap(true);
+        infoLayout->addWidget(genreLabel);
+        
+        QLabel* directorLabel = new QLabel(QString("Director: %1").arg(QString::fromStdString(movie.getDirector())));
+        directorLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
+        directorLabel->setWordWrap(true);
+        infoLayout->addWidget(directorLabel);
+        
+        QLabel* countryLabel = new QLabel(QString("Country: %1").arg(QString::fromStdString(movie.getCountry())));
+        countryLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
+        countryLabel->setWordWrap(true);
+        infoLayout->addWidget(countryLabel);
+        
+        QLabel* actorsLabel = new QLabel(QString("Actors: %1").arg(QString::fromStdString(movie.getActors())));
+        actorsLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
+        actorsLabel->setWordWrap(true);
+        infoLayout->addWidget(actorsLabel);
+        
+        QString durationText = QString("%1 min").arg(movie.getDuration());
+        QLabel* durationLabel = new QLabel(QString("Duration: %1").arg(durationText));
+        durationLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
+        infoLayout->addWidget(durationLabel);
+        
+        QLabel* descTitleLabel = new QLabel("Description:");
+        descTitleLabel->setStyleSheet("font-size: 12pt; font-weight: bold; color: #bbb; margin-top: 10px;");
+        infoLayout->addWidget(descTitleLabel);
+        
+        QTextEdit* descriptionText = new QTextEdit();
+        descriptionText->setPlainText(QString::fromStdString(movie.getDescription()));
+        descriptionText->setReadOnly(true);
+        descriptionText->setMaximumHeight(150);
+        infoLayout->addWidget(descriptionText);
+        
+        infoLayout->addStretch();
+        
+        QPushButton* closeBtn = new QPushButton("OK");
+        closeBtn->setCursor(Qt::PointingHandCursor);
+        connect(closeBtn, &QPushButton::clicked, dialog, &QDialog::accept);
+        infoLayout->addWidget(closeBtn, 0, Qt::AlignRight);
+        
+        mainLayout->addLayout(infoLayout);
+        
+        dialog->exec();
+        delete dialog;
     });
 
     connect(card, &QWidget::destroyed, card, [card]() {});
@@ -660,12 +678,9 @@ QWidget* MainWindow::createMovieCard(const Movie& movie, QWidget* parent) {
 }
 
 void MainWindow::populateAllMovies(const std::vector<Movie>& movies) {
-    // Проверяем, что layout существует
     if (!ui->gridLayoutMovies) {
         return;
     }
-    
-    // Очищаем существующие карточки
     QLayoutItem* item;
     while ((item = ui->gridLayoutMovies->takeAt(0)) != nullptr) {
         if (item->widget()) {
@@ -674,8 +689,7 @@ void MainWindow::populateAllMovies(const std::vector<Movie>& movies) {
         delete item;
     }
 
-    // Создаем новые карточки
-    const int columns = 4;  // 4 карточки в ряд
+    const int columns = 4;
     int row = 0, col = 0;
     
     for (const auto& movie : movies) {
@@ -693,14 +707,11 @@ void MainWindow::populateAllMovies(const std::vector<Movie>& movies) {
 }
 
 void MainWindow::populateFavorites() {
-    // Проверяем, что layout существует
     if (!ui->gridLayoutFavorites) {
         return;
     }
     
     auto favs = manager.getFavoriteMovies();
-    
-    // Очищаем существующие карточки
     QLayoutItem* item;
     while ((item = ui->gridLayoutFavorites->takeAt(0)) != nullptr) {
         if (item->widget()) {
@@ -709,8 +720,7 @@ void MainWindow::populateFavorites() {
         delete item;
     }
 
-    // Создаем новые карточки для избранных фильмов
-    const int columns = 4;  // 4 карточки в ряд
+    const int columns = 4;
     int row = 0, col = 0;
     
     for (const auto& movie : favs) {
@@ -728,19 +738,16 @@ void MainWindow::populateFavorites() {
 }
 
 void MainWindow::populateCollections() {
-    // Обновляем список коллекций в ComboBox
     ui->collectionComboBox->clear();
     auto collectionNames = manager.getAllCollectionNames();
     
     for (const auto& name : collectionNames) {
-        ui->collectionComboBox->addItem(QString::fromStdString(name));
+        ui->collectionComboBox->addItem(QString::fromUtf8(name.c_str(), name.length()));
     }
     
-    // Если есть коллекции, показываем первую
     if (ui->collectionComboBox->count() > 0) {
         handleCollectionChanged();
     } else {
-        // Очищаем layout если нет коллекций
         if (ui->gridLayoutCollections) {
             QLayoutItem* item;
             while ((item = ui->gridLayoutCollections->takeAt(0)) != nullptr) {
@@ -754,15 +761,11 @@ void MainWindow::populateCollections() {
 }
 
 void MainWindow::handleCollectionChanged() {
-    // Проверяем, что layout существует
     if (!ui->gridLayoutCollections) {
         return;
     }
-    
-    // Получаем выбранную коллекцию
     QString collectionName = ui->collectionComboBox->currentText();
     if (collectionName.isEmpty()) {
-        // Очищаем layout если нет выбранной коллекции
         QLayoutItem* item;
         while ((item = ui->gridLayoutCollections->takeAt(0)) != nullptr) {
             if (item->widget()) {
@@ -773,21 +776,19 @@ void MainWindow::handleCollectionChanged() {
         return;
     }
     
-    // Получаем коллекцию
     auto* collManager = manager.getCollectionManager();
     if (!collManager) {
         return;
     }
     
-    MovieCollection* collection = collManager->getCollection(collectionName.toStdString());
+    QByteArray utf8Name = collectionName.toUtf8();
+    MovieCollection* collection = collManager->getCollection(std::string(utf8Name.constData(), utf8Name.length()));
     if (!collection) {
         return;
     }
     
-    // Получаем фильмы из коллекции
     auto movies = collection->getMovies();
     
-    // Очищаем существующие карточки
     QLayoutItem* item;
     while ((item = ui->gridLayoutCollections->takeAt(0)) != nullptr) {
         if (item->widget()) {
@@ -796,8 +797,7 @@ void MainWindow::handleCollectionChanged() {
         delete item;
     }
 
-    // Создаем новые карточки для фильмов из коллекции
-    const int columns = 4;  // 4 карточки в ряд
+    const int columns = 4;
     int row = 0, col = 0;
     
     for (const auto& movie : movies) {
@@ -823,7 +823,6 @@ void MainWindow::loadPosterToLabel(QLabel* label, const Movie& movie) {
     QString fileName = QFileInfo(posterPath).fileName();
     QString sep = QDir::separator();
     
-    // Список директорий для поиска
     QStringList searchDirs;
     auto addDir = [&searchDirs](const QString& path) {
         QString normalized = QDir::cleanPath(path);
@@ -842,7 +841,6 @@ void MainWindow::loadPosterToLabel(QLabel* label, const Movie& movie) {
     addDir(".." + sep + ".." + sep + "posters");
     addDir(appDir);
     
-    // Убираем несуществующие директории
     QStringList validDirs;
     for (const QString& dir : searchDirs) {
         QDir testDir(dir);
@@ -857,7 +855,6 @@ void MainWindow::loadPosterToLabel(QLabel* label, const Movie& movie) {
     QString fullPath;
     bool found = false;
     
-    // Пробуем найти файл
     QStringList possiblePaths;
     possiblePaths << posterPath;
     possiblePaths << appDir + sep + posterPath;
@@ -880,7 +877,6 @@ void MainWindow::loadPosterToLabel(QLabel* label, const Movie& movie) {
         }
     }
     
-    // Если не нашли, ищем по имени файла
     if (!found && !validDirs.isEmpty()) {
         for (const QString& dir : validDirs) {
             QDir searchDir(dir);
@@ -893,7 +889,6 @@ void MainWindow::loadPosterToLabel(QLabel* label, const Movie& movie) {
                 }
             }
             
-            // Поиск по названию фильма
             QString movieTitle = QString::fromStdString(movie.getTitle());
             QFileInfoList files = searchDir.entryInfoList(QStringList() << "*.png" << "*.jpg" << "*.jpeg", QDir::Files);
             for (const QFileInfo& fileInfo : files) {
@@ -913,7 +908,6 @@ void MainWindow::loadPosterToLabel(QLabel* label, const Movie& movie) {
         }
     }
     
-    // Загружаем постер
     if (found && !fullPath.isEmpty()) {
         if (!QDir::isAbsolutePath(fullPath)) {
             QString testPath1 = QDir(currentDir).absoluteFilePath(fullPath);
@@ -941,8 +935,19 @@ void MainWindow::loadPosterToLabel(QLabel* label, const Movie& movie) {
             
             if (!image.isNull()) {
                 QPixmap pixmap = QPixmap::fromImage(image);
-                // Масштабируем постер для детальной страницы (больше, чем в карточках)
-                pixmap = pixmap.scaled(350, 525, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                QSize labelSize = label->size();
+                // Если размер еще не установлен, используем maximumSize или minimumSize
+                if (labelSize.width() <= 0 || labelSize.height() <= 0) {
+                    labelSize = label->maximumSize();
+                    if (labelSize.width() <= 0 || labelSize.height() <= 0) {
+                        labelSize = label->minimumSize();
+                    }
+                    // Если и они не установлены, используем дефолтный размер
+                    if (labelSize.width() <= 0 || labelSize.height() <= 0) {
+                        labelSize = QSize(450, 675);
+                    }
+                }
+                pixmap = pixmap.scaled(labelSize.width(), labelSize.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
                 label->setPixmap(pixmap);
                 label->setAlignment(Qt::AlignCenter);
                 label->setStyleSheet("border-radius: 4px;");
@@ -951,40 +956,11 @@ void MainWindow::loadPosterToLabel(QLabel* label, const Movie& movie) {
         }
     }
     
-    // Если постер не найден
     label->setText("No Poster\n" + QString::fromStdString(movie.getTitle()));
     label->setStyleSheet("background-color: #4a4a4a; color: #999; border-radius: 4px;");
     label->setAlignment(Qt::AlignCenter);
 }
 
-void MainWindow::updateDetailsFromSelection(int movieId) {
-    const Movie* m = manager.findMovieById(movieId);
-    if (!m) {
-        ui->titleValue->setText("-");
-        ui->ratingValue->setText("-");
-        ui->yearValue->setText("-");
-        ui->genreValue->setText("-");
-        ui->directorValue->setText("-");
-        ui->descriptionText->clear();
-        ui->posterLabel->setText("No Poster");
-        ui->posterLabel->setPixmap(QPixmap());
-        return;
-    }
-    ui->titleValue->setText(QString::fromStdString(m->getTitle()));
-    ui->ratingValue->setText(QString::number(m->getRating(), 'f', 1));
-    ui->yearValue->setText(QString::number(m->getYear()));
-    ui->genreValue->setText(QString::fromStdString(m->getGenreString()));
-    ui->directorValue->setText(QString::fromStdString(m->getDirector()));
-    ui->descriptionText->setPlainText(QString::fromStdString(m->getDescription()));
-    loadPosterToLabel(ui->posterLabel, *m);
-}
-
-void MainWindow::updateStats() {
-    ui->statsLabel->setText(
-        QString("Total movies: %1 | Favorites: %2")
-            .arg(static_cast<qint64>(manager.getMoviesCount()))
-            .arg(static_cast<qint64>(manager.getFavoritesCount())));
-}
 
 void MainWindow::handleSearch() {
     try {
@@ -1032,7 +1008,6 @@ void MainWindow::handleCreateSample() {
         populateAllMovies(manager.getAllMovies());
         populateFavorites();
         populateGenres();
-        updateStats();
         ui->statusbar->showMessage("Sample file created", 3000);
     } catch (const std::exception& e) {
         QMessageBox::critical(this, "Error", e.what());
@@ -1063,24 +1038,20 @@ void MainWindow::handleShowTopN() {
 }
 
 int MainWindow::selectedMovieIdFromAll() const {
-    // Теперь выбор происходит через клик по карточке
-    // Этот метод может быть использован для получения ID из кликнутой карточки
-    return -1;  // Реализовано через сигналы карточек
+    return -1;
 }
 
 int MainWindow::selectedMovieIdFromFavorites() const {
-    return -1;  // Реализовано через сигналы карточек
+    return -1;
 }
 
 
 void MainWindow::handleRefresh() {
     try {
-        // Re-load movies from file implicitly via createSample or simply repopulate current memory
         populateAllMovies(manager.getAllMovies());
         populateFavorites();
         populateCollections();
         populateGenres();
-        updateStats();
         ui->statusbar->showMessage("Refreshed", 1500);
     } catch (const std::exception& e) {
         QMessageBox::warning(this, "Refresh", e.what());
@@ -1088,11 +1059,9 @@ void MainWindow::handleRefresh() {
 }
 
 void MainWindow::handleAllSelectionChanged() {
-    // Теперь выбор происходит через клики на карточки
 }
 
 void MainWindow::handleFavSelectionChanged() {
-    // Теперь выбор происходит через клики на карточки
 }
 
 void MainWindow::handleCreateCollection() {
@@ -1105,11 +1074,12 @@ void MainWindow::handleCreateCollection() {
     }
 
     try {
-        MovieCollection* collection = manager.createCollection(name.toStdString());
+        QByteArray utf8Name = name.toUtf8();
+        MovieCollection* collection = manager.createCollection(std::string(utf8Name.constData(), utf8Name.length()));
         QMessageBox::information(this, "Success",
                                  QString("Collection '%1' created successfully!").arg(name));
         ui->statusbar->showMessage(QString("Collection '%1' created").arg(name), 3000);
-        populateCollections();  // Обновляем список коллекций
+        populateCollections();
     } catch (const std::exception& e) {
         QMessageBox::warning(this, "Error", e.what());
     }
@@ -1126,7 +1096,7 @@ void MainWindow::handleManageCollections() {
 
     QStringList names;
     for (const auto& name : collectionNames) {
-        names << QString::fromStdString(name);
+        names << QString::fromUtf8(name.c_str(), name.length());
     }
 
     bool ok;
@@ -1136,20 +1106,19 @@ void MainWindow::handleManageCollections() {
         return;
     }
 
-    // Получаем коллекцию
     auto* collManager = manager.getCollectionManager();
     if (!collManager) {
         QMessageBox::warning(this, "Error", "Collection manager not available");
         return;
     }
 
-    MovieCollection* collection = collManager->getCollection(selected.toStdString());
+    QByteArray utf8Selected = selected.toUtf8();
+    MovieCollection* collection = collManager->getCollection(std::string(utf8Selected.constData(), utf8Selected.length()));
     if (!collection) {
         QMessageBox::warning(this, "Error", "Collection not found");
         return;
     }
 
-    // Диалог для управления коллекцией
     QStringList items;
     items << "Add movie" << "Remove movie" << "View collection" << "Delete collection";
     QString action = QInputDialog::getItem(this, "Collection Action",
@@ -1173,8 +1142,8 @@ void MainWindow::handleManageCollections() {
                 QMessageBox::information(this, "Success",
                                          QString("Movie added to collection '%1'").arg(selected));
                 ui->statusbar->showMessage("Movie added to collection", 2000);
-                populateCollections();  // Обновляем отображение коллекций
-                handleCollectionChanged();  // Обновляем текущую коллекцию
+                populateCollections();
+                handleCollectionChanged();
             } catch (const std::exception& e) {
                 QMessageBox::warning(this, "Error", e.what());
             }
@@ -1191,8 +1160,8 @@ void MainWindow::handleManageCollections() {
             QMessageBox::information(this, "Success",
                                      QString("Movie removed from collection '%1'").arg(selected));
             ui->statusbar->showMessage("Movie removed from collection", 2000);
-            populateCollections();  // Обновляем отображение коллекций
-            handleCollectionChanged();  // Обновляем текущую коллекцию
+            populateCollections();
+            handleCollectionChanged();
         } catch (const std::exception& e) {
             QMessageBox::warning(this, "Error", e.what());
         }
@@ -1212,15 +1181,254 @@ void MainWindow::handleManageCollections() {
                                         QMessageBox::Yes | QMessageBox::No);
         if (ret == QMessageBox::Yes) {
             try {
-                collManager->deleteCollection(selected.toStdString());
+                QByteArray utf8Selected = selected.toUtf8();
+                collManager->deleteCollection(std::string(utf8Selected.constData(), utf8Selected.length()));
                 QMessageBox::information(this, "Success",
                                          QString("Collection '%1' deleted").arg(selected));
                 ui->statusbar->showMessage("Collection deleted", 2000);
-                populateCollections();  // Обновляем список коллекций
+                populateCollections();
             } catch (const std::exception& e) {
                 QMessageBox::warning(this, "Error", e.what());
             }
         }
+    }
+}
+
+void MainWindow::populatePlayer() {
+    if (!ui->gridLayoutPlayer) {
+        return;
+    }
+    
+    QLayoutItem* item;
+    while ((item = ui->gridLayoutPlayer->takeAt(0)) != nullptr) {
+        if (item->widget()) {
+            item->widget()->deleteLater();
+        }
+        delete item;
+    }
+    
+    QString appDir = QApplication::applicationDirPath();
+    QString currentDir = QDir::currentPath();
+    QString sep = QDir::separator();
+    
+    QStringList possiblePaths;
+    possiblePaths << currentDir + sep + "filmstoplay";
+    possiblePaths << appDir + sep + "filmstoplay";
+    possiblePaths << appDir + sep + ".." + sep + "filmstoplay";
+    possiblePaths << appDir + sep + ".." + sep + ".." + sep + "filmstoplay";
+    possiblePaths << "filmstoplay";
+    
+    QString filmstoplayPath;
+    bool found = false;
+    
+    for (const QString& path : possiblePaths) {
+        QString normalizedPath = QDir::cleanPath(path);
+        if (!QDir::isAbsolutePath(normalizedPath)) {
+            normalizedPath = QDir(currentDir).absoluteFilePath(normalizedPath);
+        }
+        QDir dir(normalizedPath);
+        if (dir.exists()) {
+            filmstoplayPath = dir.absolutePath();
+            found = true;
+            break;
+        }
+    }
+    
+    if (!found) {
+        ui->statusbar->showMessage("filmstoplay folder not found", 3000);
+        return;
+    }
+    
+    QDir dir(filmstoplayPath);
+    QStringList filters;
+    filters << "*.mp4" << "*.avi" << "*.mkv" << "*.mov" << "*.wmv" << "*.flv";
+    QFileInfoList videoFiles = dir.entryInfoList(filters, QDir::Files);
+    
+    if (videoFiles.isEmpty()) {
+        ui->statusbar->showMessage("Video files not found in filmstoplay folder", 3000);
+        return;
+    }
+    
+    const int columns = 4;
+    int row = 0, col = 0;
+    
+    for (const QFileInfo& fileInfo : videoFiles) {
+        QString fileName = fileInfo.baseName();
+        QString filePath = fileInfo.absoluteFilePath();
+        
+        QWidget* card = new QWidget(ui->scrollAreaWidgetContentsPlayer);
+        card->setFixedSize(320, 480);
+        card->setStyleSheet(
+            "QWidget { background-color: #3a3a3a; border-radius: 8px; border: 1px solid #555; }"
+            "QLabel { background-color: transparent; color: #e0e0e0; }"
+        );
+        
+        QVBoxLayout* cardLayout = new QVBoxLayout(card);
+        cardLayout->setContentsMargins(10, 10, 10, 10);
+        cardLayout->setSpacing(8);
+        
+        QLabel* posterLabel = new QLabel();
+        posterLabel->setFixedSize(300, 360);
+        loadPosterToLabelByTitle(posterLabel, fileName);
+        cardLayout->addWidget(posterLabel);
+        
+        QLabel* titleLabel = new QLabel(fileName);
+        titleLabel->setStyleSheet("font-size: 16px; font-weight: bold; color: #ff6b35;");
+        titleLabel->setWordWrap(true);
+        cardLayout->addWidget(titleLabel);
+        
+        QPushButton* playBtn = new QPushButton("▶ Play");
+        playBtn->setStyleSheet(
+            "background-color: #ff6b35;"
+            "color: white; font-weight: bold; font-size: 14px; padding: 10px; border-radius: 4px; border: none;"
+            "min-width: 100px;"
+        );
+        playBtn->setCursor(Qt::PointingHandCursor);
+        
+        playBtn->setProperty("videoPath", filePath);
+        
+        connect(playBtn, &QPushButton::clicked, [this, filePath]() {
+            playVideoFile(filePath);
+        });
+        
+        cardLayout->addWidget(playBtn);
+        
+        ui->gridLayoutPlayer->addWidget(card, row, col);
+        
+        col++;
+        if (col >= columns) {
+            col = 0;
+            row++;
+        }
+    }
+    
+    ui->statusbar->showMessage(QString("Loaded %1 video files").arg(videoFiles.size()), 2000);
+}
+
+void MainWindow::loadPosterToLabelByTitle(QLabel* label, const QString& movieTitle) {
+    if (!label) return;
+    
+    QString appDir = QApplication::applicationDirPath();
+    QString currentDir = QDir::currentPath();
+    QString sep = QDir::separator();
+    
+    QStringList searchDirs;
+    auto addDir = [&searchDirs](const QString& path) {
+        QString normalized = QDir::cleanPath(path);
+        if (!normalized.isEmpty() && !searchDirs.contains(normalized)) {
+            searchDirs << normalized;
+        }
+    };
+    
+    addDir(appDir + sep + "posters");
+    addDir(appDir + sep + ".." + sep + "posters");
+    addDir(appDir + sep + ".." + sep + ".." + sep + "posters");
+    addDir(currentDir + sep + "posters");
+    addDir(currentDir + sep + ".." + sep + "posters");
+    addDir("posters");
+    addDir(".." + sep + "posters");
+    addDir(".." + sep + ".." + sep + "posters");
+    addDir(appDir);
+    
+    QStringList validDirs;
+    for (const QString& dir : searchDirs) {
+        QDir testDir(dir);
+        if (testDir.exists()) {
+            QString absPath = testDir.absolutePath();
+            if (!validDirs.contains(absPath)) {
+                validDirs << absPath;
+            }
+        }
+    }
+    
+    QString fullPath;
+    bool found = false;
+    
+    if (!validDirs.isEmpty()) {
+        for (const QString& dir : validDirs) {
+            QDir searchDir(dir);
+            QFileInfoList files = searchDir.entryInfoList(QStringList() << "*.png" << "*.jpg" << "*.jpeg", QDir::Files);
+            for (const QFileInfo& fileInfo : files) {
+                QString baseName = fileInfo.baseName();
+                QString normalizedBaseName = baseName.toLower().remove(' ').remove('-').remove('_').remove('\'');
+                QString normalizedTitle = movieTitle.toLower().remove(' ').remove('-').remove('_').remove('\'');
+                
+                if (normalizedBaseName == normalizedTitle ||
+                    normalizedBaseName.contains(normalizedTitle) || 
+                    normalizedTitle.contains(normalizedBaseName) ||
+                    baseName.toLower().contains(movieTitle.toLower()) ||
+                    movieTitle.toLower().contains(baseName.toLower())) {
+                    fullPath = fileInfo.absoluteFilePath();
+                    found = true;
+                    break;
+                }
+            }
+            if (found) break;
+        }
+    }
+    
+    if (found && !fullPath.isEmpty()) {
+        if (!QDir::isAbsolutePath(fullPath)) {
+            QString testPath1 = QDir(currentDir).absoluteFilePath(fullPath);
+            QString testPath2 = QDir(appDir).absoluteFilePath(fullPath);
+            if (QFile::exists(testPath1)) {
+                fullPath = testPath1;
+            } else if (QFile::exists(testPath2)) {
+                fullPath = testPath2;
+            }
+        }
+        fullPath = QDir::cleanPath(fullPath);
+        
+        if (QFile::exists(fullPath)) {
+            QImageReader reader(QFileInfo(fullPath).absoluteFilePath());
+            QImage image;
+            
+            if (reader.canRead()) {
+                reader.setAutoTransform(true);
+                image = reader.read();
+            }
+            
+            if (image.isNull()) {
+                image = QImage(fullPath);
+            }
+            
+            if (!image.isNull()) {
+                QPixmap pixmap = QPixmap::fromImage(image);
+                pixmap = pixmap.scaled(300, 360, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                label->setPixmap(pixmap);
+                label->setAlignment(Qt::AlignCenter);
+                label->setStyleSheet("border-radius: 4px;");
+                return;
+            }
+        }
+    }
+    
+    label->setText("🎬\n" + movieTitle);
+    label->setStyleSheet("background-color: #2b2b2b; color: #999; border-radius: 4px; border: 2px solid #555; min-height: 360px;");
+    label->setAlignment(Qt::AlignCenter);
+    label->setWordWrap(true);
+}
+
+void MainWindow::playVideoFile(const QString& filePath) {
+    if (!QFile::exists(filePath)) {
+        QMessageBox::warning(this, "Error", "File not found: " + filePath);
+        return;
+    }
+    
+    QUrl fileUrl = QUrl::fromLocalFile(filePath);
+    bool success = QDesktopServices::openUrl(fileUrl);
+    
+    if (success) {
+        ui->statusbar->showMessage("Playing video: " + QFileInfo(filePath).fileName(), 3000);
+    } else {
+        #ifdef Q_OS_WIN
+        QProcess::startDetached("cmd", QStringList() << "/c" << "start" << "\"\"" << filePath);
+        #elif defined(Q_OS_MAC)
+        QProcess::startDetached("open", QStringList() << filePath);
+        #else
+        QProcess::startDetached("xdg-open", QStringList() << filePath);
+        #endif
+        ui->statusbar->showMessage("Playing video: " + QFileInfo(filePath).fileName(), 3000);
     }
 }
 

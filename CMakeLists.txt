@@ -17,7 +17,7 @@ find_package(Qt6 COMPONENTS
 add_executable(beta2 src/main.cpp
         src/movie.cpp
         includes/movie.h
-        includes/exceptions.h
+        includes/exceptions/exceptions.h
         src/MovieManager.cpp
         includes/MovieManager.h
         src/MovieCollection.cpp
@@ -31,7 +31,6 @@ target_link_libraries(beta2
         Qt::Widgets
 )
 
-# Копируем папку posters в директорию сборки
 if (EXISTS "${CMAKE_SOURCE_DIR}/posters")
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory

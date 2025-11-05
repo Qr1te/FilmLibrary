@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <cctype>
 
-// MovieCollection implementation
 
 MovieCollection::MovieCollection(const std::string& name, const std::vector<Movie>* allMovies)
     : collectionName(name), allMoviesRef(allMovies) {
@@ -17,11 +16,9 @@ MovieCollection::MovieCollection(const std::string& name, const std::vector<Movi
     std::transform(safeName.begin(), safeName.end(), safeName.begin(), ::tolower);
     filename = "collections/" + safeName + ".txt";
     
-    // Создаем директорию, если её нет
     try {
         std::filesystem::create_directories("collections");
     } catch (const std::exception&) {
-        // Игнорируем ошибки создания директории
     }
 }
 
@@ -30,7 +27,6 @@ void MovieCollection::validateCollectionName(const std::string& name) const {
         throw InvalidInputException("Collection name cannot be empty");
     }
     
-    // Проверка на недопустимые символы в имени файла
     std::string invalidChars = "<>:\"|?*\\/";
     for (char c : invalidChars) {
         if (name.find(c) != std::string::npos) {
@@ -55,9 +51,8 @@ void MovieCollection::addMovie(const Movie& movie) {
     int id = movie.getId();
     validateMovieId(id);
     
-    // Проверяем, нет ли уже этого фильма в коллекции
     if (containsMovie(id)) {
-        throw DuplicateFavoriteException(id);  // Используем существующее исключение
+        throw DuplicateFavoriteException(id);
     }
     
     movieIds.push_back(id);
@@ -109,13 +104,31 @@ std::string MovieCollection::getName() const {
     return collectionName;
 }
 
+std::string MovieCollection::getFilename() const {
+    return filename;
+}
+
+void MovieCollection::setAllMoviesRef(const std::vector<Movie>* movies) {
+    allMoviesRef = movies;
+}
+
+std::vector<int>::const_iterator MovieCollection::begin() const {
+    return movieIds.begin();
+}
+
+std::vector<int>::const_iterator MovieCollection::end() const {
+    return movieIds.end();
+}
+
 void MovieCollection::save() const {
-    std::ofstream file(filename);
+    std::ofstream file(filename, std::ios::binary);
     if (!file.is_open()) {
         throw FileNotFoundException(filename);
     }
     
-    // Сохраняем в формате: ID коллекции на строку
+    std::string nameLine = collectionName + "\n";
+    file.write(nameLine.c_str(), nameLine.size());
+    
     for (int id : movieIds) {
         file << id << "\n";
     }
@@ -124,10 +137,13 @@ void MovieCollection::save() const {
 void MovieCollection::load() {
     movieIds.clear();
     
-    std::ifstream file(filename);
+    std::ifstream file(filename, std::ios::binary);
     if (!file.is_open()) {
-        // Файл не существует - это нормально для новой коллекции
         return;
+    }
+    
+    std::string line;
+    if (std::getline(file, line)) {
     }
     
     int id;
@@ -135,7 +151,6 @@ void MovieCollection::load() {
         if (file.fail()) {
             break;
         }
-        // Проверяем, существует ли фильм с таким ID
         if (allMoviesRef) {
             bool exists = std::any_of(allMoviesRef->begin(), allMoviesRef->end(),
                                      [id](const Movie& m) { return m.getId() == id; });
@@ -148,14 +163,12 @@ void MovieCollection::load() {
     }
 }
 
-// CollectionManager implementation
 
 CollectionManager::CollectionManager(const std::vector<Movie>* allMovies, const std::string& dir)
     : allMoviesRef(allMovies), collectionsDirectory(dir) {
     try {
         std::filesystem::create_directories(collectionsDirectory);
     } catch (const std::exception&) {
-        // Игнорируем ошибки
     }
     loadAll();
 }
@@ -169,7 +182,6 @@ MovieCollection* CollectionManager::createCollection(const std::string& name) {
     MovieCollection* ptr = collection.get();
     collections[name] = std::move(collection);
     
-    // Сохраняем коллекцию при создании
     ptr->save();
     
     return ptr;
@@ -197,14 +209,12 @@ void CollectionManager::deleteCollection(const std::string& name) {
         throw MovieNotFoundException("Collection not found: " + name);
     }
     
-    // Удаляем файл коллекции
     try {
         std::string filename = it->second->getFilename();
         if (std::filesystem::exists(filename)) {
             std::filesystem::remove(filename);
         }
     } catch (const std::exception&) {
-        // Игнорируем ошибки удаления файла
     }
     
     collections.erase(it);
@@ -224,7 +234,6 @@ void CollectionManager::saveAll() const {
         try {
             pair.second->save();
         } catch (const std::exception&) {
-            // Продолжаем сохранять остальные коллекции
         }
     }
 }
@@ -237,25 +246,36 @@ void CollectionManager::loadAll() {
         
         for (const auto& entry : std::filesystem::directory_iterator(collectionsDirectory)) {
             if (entry.is_regular_file() && entry.path().extension() == ".txt") {
-                std::string filename = entry.path().filename().string();
-                // Убираем расширение .txt
-                std::string name = filename.substr(0, filename.length() - 4);
+                std::string filepath = entry.path().string();
                 
-                // Заменяем подчеркивания на пробелы и делаем первую букву заглавной
-                std::string displayName = name;
-                std::replace(displayName.begin(), displayName.end(), '_', ' ');
-                if (!displayName.empty()) {
-                    displayName[0] = static_cast<char>(::toupper(displayName[0]));
+                std::ifstream file(filepath, std::ios::binary);
+                std::string collectionName;
+                if (file.is_open() && std::getline(file, collectionName)) {
+                    if (collectionName.empty()) {
+                        std::string filename = entry.path().filename().string();
+                        collectionName = filename.substr(0, filename.length() - 4);
+                        std::replace(collectionName.begin(), collectionName.end(), '_', ' ');
+                        if (!collectionName.empty()) {
+                            collectionName[0] = static_cast<char>(::toupper(collectionName[0]));
+                        }
+                    }
+                } else {
+                    std::string filename = entry.path().filename().string();
+                    collectionName = filename.substr(0, filename.length() - 4);
+                    std::replace(collectionName.begin(), collectionName.end(), '_', ' ');
+                    if (!collectionName.empty()) {
+                        collectionName[0] = static_cast<char>(::toupper(collectionName[0]));
+                    }
                 }
                 
-                // Создаем коллекцию и загружаем данные
-                auto collection = std::make_unique<MovieCollection>(displayName, allMoviesRef);
-                collection->load();
-                collections[displayName] = std::move(collection);
+                if (!collectionName.empty()) {
+                    auto collection = std::make_unique<MovieCollection>(collectionName, allMoviesRef);
+                    collection->load();
+                    collections[collectionName] = std::move(collection);
+                }
             }
         }
     } catch (const std::exception&) {
-        // Игнорируем ошибки загрузки
     }
 }
 

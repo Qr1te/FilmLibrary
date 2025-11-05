@@ -18,7 +18,6 @@ MovieManager::MovieManager(const std::string& moviesFile,
     } catch (const FileNotFoundException& e) {
         std::cout << "Warning: " << e.what() << "\n";
         std::cout << "Use option 8 to create sample movies file.\n";
-        // Инициализируем менеджер коллекций даже если фильмы не загружены
         collectionManager = std::make_unique<CollectionManager>(&movies);
     }
 }
@@ -56,7 +55,6 @@ void MovieManager::loadMovies() {
         }
     }
     
-    // Обновляем ссылку на фильмы в менеджере коллекций
     if (collectionManager) {
         collectionManager->updateAllMoviesRef(&movies);
     }
@@ -240,13 +238,10 @@ void MovieManager::createSampleMoviesFile() {
         throw FileNotFoundException(moviesFile);
     }
 
-    // Фильмы из постеров (формат: id|title|rating|year|genres|director|description|posterPath|country|actors|duration)
-    // Все 60 фильмов с полными данными
     file << "1|The Shawshank Redemption|9.2|1994|Drama|Frank Darabont|Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.|posters/The Shawshank Redemption.png|USA|Tim Robbins, Morgan Freeman|142\n";
     file << "2|The Godfather|9.2|1972|Crime;Drama|Francis Ford Coppola|The aging patriarch of an organized crime dynasty transfers control to his reluctant son.|posters/The Godfather.png|USA|Marlon Brando, Al Pacino|175\n";
     file << "3|The Dark Knight|9.0|2008|Action;Crime;Drama|Christopher Nolan|Batman faces the Joker, a criminal mastermind who seeks to undermine society.|posters/The Dark Knight.png|USA|Christian Bale, Heath Ledger|152\n";
-    file << "4|Pulp Fiction|8.9|1994|Crime;Drama|Quentin Tarantino|The lives of two mob hitmen, a boxer, and others intertwine in tales of violence and redemption.|posters/Pulp Fiction.png|USA|John Travolta, Samuel L. Jackson|154\n";
-    file << "5|Forrest Gump|8.8|1994|Drama;Romance|Robert Zemeckis|The story of a man with low IQ who accomplished great things in his life.|posters/Forrest Gump.png|USA|Tom Hanks, Robin Wright|142\n";
+    file << "4|Forrest Gump|8.8|1994|Drama;Romance|Robert Zemeckis|The story of a man with low IQ who accomplished great things in his life.|posters/Forrest Gump.png|USA|Tom Hanks, Robin Wright|142\n";
     file << "6|Inception|8.7|2010|Sci-Fi;Action;Thriller|Christopher Nolan|A thief who steals corporate secrets through dream-sharing technology is given a chance to have his criminal history erased.|posters/Inception.png|USA;UK|Leonardo DiCaprio, Marion Cotillard|148\n";
     file << "7|The Matrix|8.7|1999|Sci-Fi;Action|The Wachowskis|A computer hacker learns about the true nature of reality and his role in the war against its controllers.|posters/The Matrix.png|USA|Keanu Reeves, Laurence Fishburne|136\n";
     file << "8|Goodfellas|8.7|1990|Crime;Drama|Martin Scorsese|The story of Henry Hill and his life in the mob.|posters/Goodfellas.png|USA|Robert De Niro, Ray Liotta|146\n";
@@ -265,9 +260,8 @@ void MovieManager::createSampleMoviesFile() {
     file << "21|Django Unchained|8.4|2012|Drama;Western|Quentin Tarantino|With the help of a German bounty hunter, a freed slave sets out to rescue his wife.|posters/Django Unchained.png|USA|Jamie Foxx, Christoph Waltz|165\n";
     file << "22|Titanic|7.9|1997|Drama;Romance|James Cameron|A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious ship.|posters/Titanic.png|USA|Leonardo DiCaprio, Kate Winslet|194\n";
     file << "23|Avatar|7.8|2009|Action;Adventure|James Cameron|A paraplegic Marine dispatched to the moon Pandora on a unique mission becomes torn between following his orders.|posters/Avatar.png|USA|Sam Worthington, Zoe Saldana|162\n";
-    file << "24|The Wolf of Wall Street|8.2|2013|Biography;Comedy|Martin Scorsese|Based on the true story of Jordan Belfort, from his rise to a wealthy stock-broker.|posters/The Wolf of Wall Street.png|USA|Leonardo DiCaprio, Jonah Hill|180\n";
-    file << "25|Catch Me If You Can|8.1|2002|Biography;Crime|Steven Spielberg|A seasoned FBI agent pursues Frank Abagnale Jr. who, before his 19th birthday, successfully forged millions of dollars' worth of checks.|posters/Catch Me If You Can.png|USA|Leonardo DiCaprio, Tom Hanks|141\n";
-    file << "26|Snatch|8.2|2000|Comedy;Crime|Guy Ritchie|Unscrupulous boxing promoters, violent bookmakers, a Russian gangster, and a dog.|posters/Snatch.png|UK|Jason Statham, Brad Pitt|104\n";
+    file << "24|Catch Me If You Can|8.1|2002|Biography;Crime|Steven Spielberg|A seasoned FBI agent pursues Frank Abagnale Jr. who, before his 19th birthday, successfully forged millions of dollars' worth of checks.|posters/Catch Me If You Can.png|USA|Leonardo DiCaprio, Tom Hanks|141\n";
+    file << "25|Snatch|8.2|2000|Comedy;Crime|Guy Ritchie|Unscrupulous boxing promoters, violent bookmakers, a Russian gangster, and a dog.|posters/Snatch.png|UK|Jason Statham, Brad Pitt|104\n";
     file << "27|The Fifth Element|7.6|1997|Action;Sci-Fi|Luc Besson|In the 23rd century, a taxi driver unwittingly becomes the central figure in the search for a legendary cosmic weapon.|posters/The Fifth Element.png|France|Bruce Willis, Milla Jovovich|126\n";
     file << "28|Iron Man|7.9|2008|Action;Adventure|Jon Favreau|After being held captive in an Afghan cave, billionaire engineer Tony Stark creates a unique weaponized suit of armor.|posters/Iron Man.png|USA|Robert Downey Jr., Gwyneth Paltrow|126\n";
     file << "29|Avengers Endgame|8.4|2019|Action;Adventure|Anthony Russo|After the devastating events of Infinity War, the universe is in ruins.|posters/Avengers Endgame.png|USA|Robert Downey Jr., Chris Evans|181\n";
@@ -307,7 +301,7 @@ void MovieManager::createSampleMoviesFile() {
     file << "63|F1|8.0|2023|Documentary|Paul Greengrass|A documentary following the 2022 Formula 1 season.|posters/F1.png|UK|Lewis Hamilton, Max Verstappen|120\n";
 
 
-    std::cout << "Sample movies file created with 60 movies!\n";
+    std::cout << "Sample movies file created with 61 movies!\n";
     loadMovies();
 }
 
@@ -405,4 +399,24 @@ std::vector<std::string> MovieManager::getAllCollectionNames() const {
         return {};
     }
     return collectionManager->getAllCollectionNames();
+}
+
+const std::vector<Movie>& MovieManager::getAllMovies() const {
+    return movies;
+}
+
+CollectionManager* MovieManager::getCollectionManager() {
+    return collectionManager.get();
+}
+
+const CollectionManager* MovieManager::getCollectionManager() const {
+    return collectionManager.get();
+}
+
+size_t MovieManager::getMoviesCount() const {
+    return movies.size();
+}
+
+size_t MovieManager::getFavoritesCount() const {
+    return favoriteIds.size();
 }

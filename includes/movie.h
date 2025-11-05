@@ -33,32 +33,31 @@ public:
           const std::string& description);
 
 
-    int getId() const { return id; }
-    const std::string& getTitle() const { return title; }
-    double getRating() const { return rating; }
-    int getYear() const { return year; }
-    const std::vector<std::string>& getGenres() const { return genres; }
-    std::string getGenreString() const;  // Возвращает жанры через запятую
-    const std::string& getDirector() const { return director; }
-    const std::string& getDescription() const { return description; }
-    const std::string& getPosterPath() const { return posterPath; }
-    const std::string& getCountry() const { return country; }
-    const std::string& getActors() const { return actors; }
-    int getDuration() const { return duration; }
+    int getId() const;
+    const std::string& getTitle() const;
+    double getRating() const;
+    int getYear() const;
+    const std::vector<std::string>& getGenres() const;
+    std::string getGenreString() const;
+    const std::string& getDirector() const;
+    const std::string& getDescription() const;
+    const std::string& getPosterPath() const;
+    const std::string& getCountry() const;
+    const std::string& getActors() const;
+    int getDuration() const;
 
-    // Сеттеры
-    void setId(int id) { this->id = id; }
-    void setTitle(const std::string& title) { this->title = title; }
-    void setRating(double rating) { this->rating = rating; }
-    void setYear(int year) { this->year = year; }
-    void setGenres(const std::vector<std::string>& genres) { this->genres = genres; }
+    void setId(int id);
+    void setTitle(const std::string& title);
+    void setRating(double rating);
+    void setYear(int year);
+    void setGenres(const std::vector<std::string>& genres);
     void addGenre(const std::string& genre);
-    void setDirector(const std::string& director) { this->director = director; }
-    void setDescription(const std::string& description) { this->description = description; }
-    void setPosterPath(const std::string& path) { this->posterPath = path; }
-    void setCountry(const std::string& country) { this->country = country; }
-    void setActors(const std::string& actors) { this->actors = actors; }
-    void setDuration(int duration) { this->duration = duration; }
+    void setDirector(const std::string& director);
+    void setDescription(const std::string& description);
+    void setPosterPath(const std::string& path);
+    void setCountry(const std::string& country);
+    void setActors(const std::string& actors);
+    void setDuration(int duration);
 
     void print() const;
     std::string toString() const;
@@ -74,4 +73,4 @@ public:
 };
 
 
-#endif//BETA2_MOVIE_H
+#endif

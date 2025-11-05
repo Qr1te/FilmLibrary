@@ -3,7 +3,7 @@
 
 
 #include "movie.h"
-#include "exceptions.h"
+#include "exceptions/exceptions.h"
 #include "MovieCollection.h"
 #include <vector>
 #include <string>
@@ -39,11 +39,10 @@ public:
     void getMovieDetails(int id) const;
 
     void createSampleMoviesFile();
-    size_t getMoviesCount() const { return movies.size(); }
-    size_t getFavoritesCount() const { return favoriteIds.size(); }
+    size_t getMoviesCount() const;
+    size_t getFavoritesCount() const;
 
-    // GUI support methods (non-intrusive, preserve existing functionality)
-    const std::vector<Movie>& getAllMovies() const { return movies; }
+    const std::vector<Movie>& getAllMovies() const;
     std::vector<Movie> getFavoriteMovies() const;
     bool isFavorite(int id) const;
     std::vector<Movie> searchByTitleResults(const std::string& title) const;
@@ -51,15 +50,13 @@ public:
     std::vector<Movie> topRatedResults(int count = 10) const;
     const Movie* findMovieById(int id) const;
     
-    // Методы для получения всех уникальных жанров
     std::set<std::string> getAllGenres() const;
     
-    // Методы для работы с коллекциями
-    CollectionManager* getCollectionManager() { return collectionManager.get(); }
-    const CollectionManager* getCollectionManager() const { return collectionManager.get(); }
+    CollectionManager* getCollectionManager();
+    const CollectionManager* getCollectionManager() const;
     MovieCollection* createCollection(const std::string& name);
     std::vector<std::string> getAllCollectionNames() const;
 };
 
 
-#endif//BETA2_MOVIEMANAGER_H
+#endif

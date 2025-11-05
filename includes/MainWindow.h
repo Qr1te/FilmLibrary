@@ -41,23 +41,21 @@ private:
     void populateAllMovies(const std::vector<Movie>& movies);
     void populateFavorites();
     void populateCollections();
+    void populatePlayer();
     void populateGenres();
-    void updateDetailsFromSelection(int movieId);
-    void updateStats();
     QWidget* createMovieCard(const Movie& movie, QWidget* parent = nullptr);
     int selectedMovieIdFromAll() const;
     int selectedMovieIdFromFavorites() const;
     void loadPosterToLabel(QLabel* label, const Movie& movie);
+    void loadPosterToLabelByTitle(QLabel* label, const QString& movieTitle);
+    void playVideoFile(const QString& filePath);
 
 private:
     Ui::MainWindow* ui;
     MovieManager manager;
-    // Модели больше не используются, так как перешли на карточки
-    // QScopedPointer<QStandardItemModel> allModel;
-    // QScopedPointer<QStandardItemModel> favModel;
 };
 
-#endif // BETA2_MAINWINDOW_H
+#endif
 
 
 
