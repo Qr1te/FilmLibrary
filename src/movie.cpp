@@ -3,6 +3,14 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <cctype>
+
+static std::string trim(const std::string& str) {
+    size_t first = str.find_first_not_of(" \t\n\r");
+    if (first == std::string::npos) return "";
+    size_t last = str.find_last_not_of(" \t\n\r");
+    return str.substr(first, (last - first + 1));
+}
 
 Movie::Movie(int id, const std::string& title, double rating, int year,
              const std::vector<std::string>& genres, const std::string& director,
@@ -164,8 +172,29 @@ std::string Movie::toString() const {
         oss << genres[i];
     }
     
-    oss << "|" << director << "|" << description << "|" << posterPath
-        << "|" << country << "|" << actors << "|" << duration;
+    std::string cleanDescription = description;
+    std::replace(cleanDescription.begin(), cleanDescription.end(), '\n', ' ');
+    std::replace(cleanDescription.begin(), cleanDescription.end(), '\r', ' ');
+    
+    std::string cleanTitle = title;
+    std::replace(cleanTitle.begin(), cleanTitle.end(), '\n', ' ');
+    std::replace(cleanTitle.begin(), cleanTitle.end(), '\r', ' ');
+    
+    std::string cleanDirector = director;
+    std::replace(cleanDirector.begin(), cleanDirector.end(), '\n', ' ');
+    std::replace(cleanDirector.begin(), cleanDirector.end(), '\r', ' ');
+    
+    std::string cleanCountry = country;
+    std::replace(cleanCountry.begin(), cleanCountry.end(), '\n', ' ');
+    std::replace(cleanCountry.begin(), cleanCountry.end(), '\r', ' ');
+    
+    std::string cleanActors = actors;
+    std::replace(cleanActors.begin(), cleanActors.end(), '\n', ' ');
+    std::replace(cleanActors.begin(), cleanActors.end(), '\r', ' ');
+    
+    oss << "|" << cleanDirector << "|" << cleanDescription << "|" << posterPath
+        << "|" << cleanCountry << "|" << cleanActors << "|" << duration;
+    
     return oss.str();
 }
 
@@ -175,17 +204,44 @@ Movie Movie::fromString(const std::string& data) {
     std::vector<std::string> tokens;
 
     while (std::getline(iss, token, '|')) {
-        tokens.push_back(token);
+        std::string trimmed = trim(token);
+        tokens.push_back(trimmed);
     }
 
     if (tokens.size() >= 7) {
-        int id = std::stoi(tokens[0]);
-        std::string title = tokens[1];
-        double rating = std::stod(tokens[2]);
-        int year = std::stoi(tokens[3]);
+        int id = 0;
+        double rating = 0.0;
+        int year = 0;
+        int duration = 0;
+        
+        try {
+            if (!tokens[0].empty()) {
+                id = std::stoi(tokens[0]);
+            }
+        } catch (...) {
+            return Movie(0, "", 0.0, 0, std::vector<std::string>(), "", "", "", "", "", 0);
+        }
+        
+        std::string title = tokens.size() > 1 ? tokens[1] : "";
+        
+        try {
+            if (tokens.size() > 2 && !tokens[2].empty()) {
+                rating = std::stod(tokens[2]);
+            }
+        } catch (...) {
+            rating = 0.0;
+        }
+        
+        try {
+            if (tokens.size() > 3 && !tokens[3].empty()) {
+                year = std::stoi(tokens[3]);
+            }
+        } catch (...) {
+            year = 0;
+        }
         
         std::vector<std::string> genres;
-        std::string genreStr = tokens[4];
+        std::string genreStr = tokens.size() > 4 ? tokens[4] : "";
         if (!genreStr.empty()) {
             std::istringstream genreStream(genreStr);
             std::string genre;
@@ -205,7 +261,20 @@ Movie Movie::fromString(const std::string& data) {
         std::string posterPath = tokens.size() > 7 ? tokens[7] : "";
         std::string country = tokens.size() > 8 ? tokens[8] : "";
         std::string actors = tokens.size() > 9 ? tokens[9] : "";
-        int duration = tokens.size() > 10 ? std::stoi(tokens[10]) : 0;
+        
+        if (tokens.size() > 10) {
+            if (!tokens[10].empty()) {
+                try {
+                    duration = std::stoi(tokens[10]);
+                } catch (...) {
+                    duration = 0;
+                }
+            } else {
+                duration = 0;
+            }
+        } else {
+            duration = 0;
+        }
         
         return Movie(id, title, rating, year, genres, director, description,
                     posterPath, country, actors, duration);

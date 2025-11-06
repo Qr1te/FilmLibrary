@@ -30,6 +30,11 @@
 #include <QUrl>
 #include <QThread>
 #include <functional>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QLabel>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent), ui(new Ui::MainWindow), isSortedByRating(false) {
@@ -41,7 +46,6 @@ MainWindow::MainWindow(QWidget* parent)
     posterManager->setNetworkManager(networkManager);
     cardFactory = new MovieCardFactory(&manager, posterManager, ui->statusbar);
     
-    // Настройка callbacks для cardFactory
     cardFactory->setOnFavoritesChanged([this]() { populateFavorites(); });
     cardFactory->setOnCollectionsChanged([this]() { populateCollections(); handleCollectionChanged(); });
     cardFactory->setOnMoviesChanged([this]() { populateAllMovies(manager.getAllMovies()); });
@@ -211,14 +215,6 @@ void MainWindow::showMovieInfo(const Movie& movie) {
         delete dialog;
 }
 
-// УДАЛЕНО: createMovieCard - перенесено в MovieCardFactory
-// УДАЛЕНО: loadPosterToLabel - перенесено в PosterManager
-// УДАЛЕНО: loadPosterToLabelByTitle - перенесено в PosterManager
-// УДАЛЕНО: searchMovieAPI - перенесено в KinopoiskAPIClient
-// УДАЛЕНО: processMovieData - перенесено в KinopoiskAPIClient
-// УДАЛЕНО: parseMovieFromJSON - перенесено в KinopoiskAPIClient
-// УДАЛЕНО: downloadPoster - перенесено в PosterManager
-
 void MainWindow::populateAllMovies(const std::vector<Movie>& movies) {
     if (!ui->gridLayoutMovies) {
         return;
@@ -357,27 +353,20 @@ void MainWindow::handleCollectionChanged() {
     }
 }
 
-// УДАЛЕНО: loadPosterToLabel - перенесено в PosterManager
-
-
 void MainWindow::handleSearch() {
     const QString title = ui->searchLineEdit->text().trimmed();
     const QString genre = ui->genreComboBox->currentText().trimmed();
 
-    // Search in local movies by title and/or genre
     try {
         std::vector<Movie> filtered = manager.getAllMovies();
         
-        // Filter by title if provided
         if (!title.isEmpty()) {
             filtered = manager.searchByTitleResults(title.toStdString());
         }
         
-        // Filter by genre if provided
         if (!genre.isEmpty()) {
             std::vector<Movie> genreFiltered = manager.searchByGenreResults(genre.toStdString());
             
-            // If title was also provided, intersect the results
             if (!title.isEmpty()) {
                 std::vector<Movie> intersection;
                 for (const auto& movie : filtered) {
@@ -402,15 +391,61 @@ void MainWindow::handleSearch() {
 }
 
 void MainWindow::handleAddMovie() {
-    const QString title = ui->searchLineEdit->text().trimmed();
+    QDialog* dialog = new QDialog(this);
+    dialog->setWindowTitle("Добавить фильм");
+    dialog->setMinimumSize(500, 150);
+    dialog->setStyleSheet(
+        "QDialog { background-color: #2b2b2b; }"
+        "QLabel { color: #e0e0e0; background-color: transparent; }"
+        "QLineEdit { background-color: #3a3a3a; color: #e0e0e0; border: 1px solid #555; padding: 8px; border-radius: 4px; font-size: 12pt; }"
+        "QPushButton { background-color: #ff6b35; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; font-size: 12pt; }"
+        "QPushButton:hover { background-color: #ff8555; }"
+        "QPushButton:pressed { background-color: #e55a2b; }"
+    );
     
-    if (title.isEmpty()) {
-        QMessageBox::information(this, "Добавить фильм", "Пожалуйста, введите название фильма для поиска");
-        return;
-    }
+    QVBoxLayout* dialogLayout = new QVBoxLayout(dialog);
+    dialogLayout->setSpacing(15);
+    dialogLayout->setContentsMargins(20, 20, 20, 20);
     
-    // Search via API to add new movie
-    apiClient->searchMovie(title, 
+    QLabel* titleLabel = new QLabel("Введите название фильма для поиска:");
+    titleLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
+    dialogLayout->addWidget(titleLabel);
+    
+    QLineEdit* searchInput = new QLineEdit();
+    searchInput->setPlaceholderText("Название фильма...");
+    searchInput->setFocus();
+    dialogLayout->addWidget(searchInput);
+    
+    QHBoxLayout* buttonsLayout = new QHBoxLayout();
+    buttonsLayout->addStretch();
+    
+    QPushButton* cancelBtn = new QPushButton("Отмена");
+    cancelBtn->setStyleSheet(
+        "background-color: #555; color: #e0e0e0; padding: 10px 20px; border-radius: 4px; font-weight: bold; font-size: 12pt;"
+    );
+    cancelBtn->setCursor(Qt::PointingHandCursor);
+    connect(cancelBtn, &QPushButton::clicked, dialog, &QDialog::reject);
+    buttonsLayout->addWidget(cancelBtn);
+    
+    QPushButton* searchBtn = new QPushButton("Поиск");
+    searchBtn->setCursor(Qt::PointingHandCursor);
+    connect(searchBtn, &QPushButton::clicked, dialog, &QDialog::accept);
+    buttonsLayout->addWidget(searchBtn);
+    
+    dialogLayout->addLayout(buttonsLayout);
+    
+    connect(searchInput, &QLineEdit::returnPressed, dialog, &QDialog::accept);
+    
+    if (dialog->exec() == QDialog::Accepted) {
+        QString title = searchInput->text().trimmed();
+        delete dialog;
+        
+        if (title.isEmpty()) {
+            QMessageBox::information(this, "Добавить фильм", "Пожалуйста, введите название фильма для поиска");
+            return;
+        }
+        
+        apiClient->searchMovie(title, 
         [this](const Movie& movie, const QString& posterUrl) {
         if (movie.getId() == 0) {
             ui->statusbar->showMessage("Фильм не найден", 3000);
@@ -506,19 +541,8 @@ void MainWindow::handleAddMovie() {
                     }
 
                     try {
-                        qDebug() << "=== Adding movie to file ===";
-                        qDebug() << "Movie country before add:" << QString::fromStdString(movieToAdd.getCountry());
-                        qDebug() << "Movie actors before add:" << QString::fromStdString(movieToAdd.getActors());
-                        qDebug() << "Movie duration before add:" << movieToAdd.getDuration();
                         manager.addMovieToFile(movieToAdd);
                         manager.reloadMovies();
-                        // Проверяем, что данные сохранились
-                        const Movie* savedMovie = manager.findMovieById(movieToAdd.getId());
-                        if (savedMovie) {
-                            qDebug() << "Movie country after reload:" << QString::fromStdString(savedMovie->getCountry());
-                            qDebug() << "Movie actors after reload:" << QString::fromStdString(savedMovie->getActors());
-                            qDebug() << "Movie duration after reload:" << savedMovie->getDuration();
-                        }
                         populateAllMovies(manager.getAllMovies());
                         populateGenres();
                         ui->statusbar->showMessage("Фильм добавлен в фильмотеку!", 3000);
@@ -529,24 +553,13 @@ void MainWindow::handleAddMovie() {
                 });
             } else {
                 try {
-                    qDebug() << "=== Adding movie to file (no poster) ===";
-                    qDebug() << "Movie country before add:" << QString::fromStdString(movie.getCountry());
-                    qDebug() << "Movie actors before add:" << QString::fromStdString(movie.getActors());
-                    qDebug() << "Movie duration before add:" << movie.getDuration();
                     manager.addMovieToFile(movie);
                     manager.reloadMovies();
-                    // Проверяем, что данные сохранились
-                    const Movie* savedMovie = manager.findMovieById(movie.getId());
-                    if (savedMovie) {
-                        qDebug() << "Movie country after reload:" << QString::fromStdString(savedMovie->getCountry());
-                        qDebug() << "Movie actors after reload:" << QString::fromStdString(savedMovie->getActors());
-                        qDebug() << "Movie duration after reload:" << savedMovie->getDuration();
-                    }
                     populateAllMovies(manager.getAllMovies());
                     populateGenres();
                     ui->statusbar->showMessage("Фильм добавлен в фильмотеку!", 3000);
                     QMessageBox::information(this, "Успех", "Фильм успешно добавлен в фильмотеку!");
-                } catch (const std::exception& e) {
+    } catch (const std::exception& e) {
                     QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
                 }
             }
@@ -556,6 +569,9 @@ void MainWindow::handleAddMovie() {
         ui->statusbar->showMessage("Ошибка поиска: " + errorMessage, 3000);
         QMessageBox::warning(this, "Ошибка поиска", "Не удалось выполнить поиск фильма:\n" + errorMessage);
     });
+    } else {
+        delete dialog;
+    }
 }
 
 
@@ -741,13 +757,4 @@ void MainWindow::handleManageCollections() {
         }
     }
 }
-
-// УДАЛЕНО: populatePlayer - вкладка Плеер удалена
-// УДАЛЕНО: playVideoFile - вкладка Плеер удалена
-
-// УДАЛЕНО: searchMovieAPI - перенесено в KinopoiskAPIClient
-// УДАЛЕНО: processMovieData - перенесено в KinopoiskAPIClient
-// УДАЛЕНО: parseMovieFromJSON - перенесено в KinopoiskAPIClient
-// УДАЛЕНО: downloadPoster - перенесено в PosterManager
-
 

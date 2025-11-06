@@ -200,15 +200,13 @@ void PosterManager::loadImageToLabel(QLabel* label, const QString& filePath) {
                 labelSize = label->minimumSize();
             }
             if (labelSize.width() <= 0 || labelSize.height() <= 0) {
-                // Если размер все еще не определен, используем размер по умолчанию
                 labelSize = QSize(450, 675);
             }
         }
-        // Масштабируем с сохранением пропорций, чтобы постер полностью поместился
         pixmap = pixmap.scaled(labelSize.width(), labelSize.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
         label->setPixmap(pixmap);
         label->setAlignment(Qt::AlignCenter);
-        label->setScaledContents(false); // Важно: не растягивать содержимое
+        label->setScaledContents(false);
     }
 }
 
@@ -299,28 +297,20 @@ void PosterManager::loadPosterToLabelByTitle(QLabel* label, const QString& movie
 void PosterManager::downloadPoster(const QString& posterUrl, const QString& savePath, 
                                    std::function<void(bool)> callback) {
     if (!networkManager) {
-        qDebug() << "NetworkManager not set!";
         if (callback) callback(false);
         return;
     }
     
-    qDebug() << "downloadPoster called with URL:" << posterUrl;
-    qDebug() << "Save path:" << savePath;
-    
     if (posterUrl.isEmpty()) {
-        qDebug() << "Poster URL is empty!";
         if (callback) callback(false);
         return;
     }
     
     QUrl url(posterUrl);
     if (!url.isValid()) {
-        qDebug() << "Invalid poster URL:" << posterUrl;
         if (callback) callback(false);
         return;
     }
-    
-    qDebug() << "Creating network request for:" << url.toString();
     
     QNetworkRequest request(url);
     request.setRawHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
@@ -332,12 +322,8 @@ void PosterManager::downloadPoster(const QString& posterUrl, const QString& save
     connect(reply, &QNetworkReply::finished, [this, reply, savePath, callback, posterUrl]() {
         bool success = false;
         
-        qDebug() << "Poster download finished. Error:" << reply->error();
-        qDebug() << "HTTP status:" << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        
         if (reply->error() == QNetworkReply::NoError) {
             QByteArray imageData = reply->readAll();
-            qDebug() << "Received image data size:" << imageData.size() << "bytes";
             
             if (!imageData.isEmpty()) {
                 QString imageFormat = "JPEG";
@@ -356,9 +342,6 @@ void PosterManager::downloadPoster(const QString& posterUrl, const QString& save
                     fileExtension = "bmp";
                 }
                 
-                qDebug() << "Detected image format:" << imageFormat;
-                qDebug() << "First 16 bytes (hex):" << imageData.left(16).toHex();
-                
                 QImage image;
                 if (!image.loadFromData(imageData)) {
                     if (!image.loadFromData(imageData, imageFormat.toUtf8().constData())) {
@@ -368,12 +351,8 @@ void PosterManager::downloadPoster(const QString& posterUrl, const QString& save
                             if (image.loadFromData(imageData, fmt.toUtf8().constData())) {
                                 imageFormat = fmt;
                                 loaded = true;
-                                qDebug() << "Successfully loaded with format:" << fmt;
                                 break;
                             }
-                        }
-                        if (!loaded) {
-                            qDebug() << "Failed to load image with any format";
                         }
                     }
                 }
@@ -388,17 +367,14 @@ void PosterManager::downloadPoster(const QString& posterUrl, const QString& save
                     file.close();
                     
                     if (bytesWritten > 0 && bytesWritten == imageData.size()) {
-                        qDebug() << "Poster saved successfully to:" << correctPath;
                         file.flush();
                         QThread::msleep(50);
                         
                         QImage testImage;
                         if (testImage.load(correctPath)) {
-                            qDebug() << "Saved file is valid image. Size:" << testImage.size();
                             success = true;
                         } else {
                             if (QFile::exists(correctPath) && QFileInfo(correctPath).size() > 0) {
-                                qDebug() << "File exists and has size, considering success";
                                 success = true;
                             }
                         }
@@ -414,7 +390,6 @@ void PosterManager::downloadPoster(const QString& posterUrl, const QString& save
                         }
                         if (image.save(&file2, saveFormat.toUtf8().constData())) {
                             file2.close();
-                            qDebug() << "Poster saved via QImage to:" << correctPath;
                             success = true;
                         } else {
                             file2.close();
@@ -422,8 +397,6 @@ void PosterManager::downloadPoster(const QString& posterUrl, const QString& save
                     }
                 }
             }
-        } else {
-            qDebug() << "Error downloading poster:" << reply->errorString();
         }
         
         reply->deleteLater();

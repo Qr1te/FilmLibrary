@@ -58,7 +58,6 @@ public:
     MovieCollection* createCollection(const std::string& name);
     std::vector<std::string> getAllCollectionNames() const;
     
-    // API methods
     void addMovieToFile(const Movie& movie);
     void saveMovies();
     void removeMovie(int movieId);

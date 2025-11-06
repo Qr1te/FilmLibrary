@@ -175,7 +175,7 @@ CollectionManager::CollectionManager(const std::vector<Movie>* allMovies, const 
 
 MovieCollection* CollectionManager::createCollection(const std::string& name) {
     if (collections.find(name) != collections.end()) {
-        throw InvalidInputException("Collection with this name already exists");
+        throw DuplicateCollectionException(name);
     }
     
     auto collection = std::make_unique<MovieCollection>(name, allMoviesRef);
@@ -206,7 +206,7 @@ const MovieCollection* CollectionManager::getCollection(const std::string& name)
 void CollectionManager::deleteCollection(const std::string& name) {
     auto it = collections.find(name);
     if (it == collections.end()) {
-        throw MovieNotFoundException("Collection not found: " + name);
+        throw CollectionNotFoundException(name);
     }
     
     try {

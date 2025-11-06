@@ -41,8 +41,6 @@ void KinopoiskAPIClient::searchMovie(const QString& title,
     query.addQueryItem("limit", "1");
     url.setQuery(query);
     
-    qDebug() << "Search URL:" << url.toString();
-    
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Accept", "application/json");
@@ -60,9 +58,6 @@ void KinopoiskAPIClient::onSearchFinished() {
     
     int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     QByteArray data = reply->readAll();
-    
-    qDebug() << "API Response Status Code:" << statusCode;
-    qDebug() << "API Response Data:" << data.left(500);
     
     if (reply->error() != QNetworkReply::NoError) {
         handleError(reply, "Ошибка при поиске фильма через API.");
@@ -96,7 +91,6 @@ void KinopoiskAPIClient::onSearchFinished() {
     QJsonObject root = doc.object();
     
     if (!root.contains("docs")) {
-        qDebug() << "Unexpected API response structure:" << root.keys();
         if (errorCallback) errorCallback("Неожиданный формат ответа от API");
         return;
     }
@@ -111,7 +105,6 @@ void KinopoiskAPIClient::onSearchFinished() {
     searchResultJson = docs[0].toObject();
     int movieId = searchResultJson["id"].toInt();
     
-    // Делаем дополнительный запрос для получения полной информации
     fetchMovieDetails(movieId);
 }
 
@@ -121,8 +114,6 @@ void KinopoiskAPIClient::fetchMovieDetails(int movieId) {
     detailRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     detailRequest.setRawHeader("Accept", "application/json");
     detailRequest.setRawHeader("X-API-KEY", apiKey.toUtf8());
-    
-    qDebug() << "Fetching full movie details from:" << detailUrl.toString();
     
     QNetworkReply* detailReply = networkManager->get(detailRequest);
     connect(detailReply, &QNetworkReply::finished, this, &KinopoiskAPIClient::onDetailFinished);
@@ -143,71 +134,87 @@ void KinopoiskAPIClient::onDetailFinished() {
         
         if (parseError.error == QJsonParseError::NoError && detailDoc.isObject()) {
             QJsonObject detailObj = detailDoc.object();
-            // Объединяем данные: приоритет у детального запроса, но не перезаписываем непустые значения
             for (auto it = detailObj.begin(); it != detailObj.end(); ++it) {
                 QString key = it.key();
                 QJsonValue detailValue = it.value();
                 
-                // Для массивов (countries, persons) - объединяем, если исходный пустой
                 if (detailValue.isArray()) {
                     QJsonArray detailArray = detailValue.toArray();
                     if (!detailArray.isEmpty()) {
-                        if (!fullMovieJson.contains(key) || 
-                            !fullMovieJson[key].isArray() || 
-                            fullMovieJson[key].toArray().isEmpty()) {
+                        if (!fullMovieJson.contains(key)) {
+                            fullMovieJson[key] = detailValue;
+                        } else if (fullMovieJson[key].isArray()) {
+                            QJsonArray existingArray = fullMovieJson[key].toArray();
+                            if (existingArray.isEmpty() || detailArray.size() > existingArray.size()) {
+                                fullMovieJson[key] = detailValue;
+                            }
+                        } else {
                             fullMovieJson[key] = detailValue;
                         }
                     }
                 }
-                // Для строк - перезаписываем только если исходная пустая
                 else if (detailValue.isString()) {
                     QString detailStr = detailValue.toString();
                     if (!detailStr.isEmpty()) {
-                        if (!fullMovieJson.contains(key) || 
-                            !fullMovieJson[key].isString() || 
-                            fullMovieJson[key].toString().isEmpty()) {
+                        if (!fullMovieJson.contains(key)) {
+                            fullMovieJson[key] = detailValue;
+                        } else if (fullMovieJson[key].isString()) {
+                            QString existingStr = fullMovieJson[key].toString();
+                            if (existingStr.isEmpty() || detailStr.length() > existingStr.length()) {
+                                fullMovieJson[key] = detailValue;
+                            }
+                        } else {
                             fullMovieJson[key] = detailValue;
                         }
                     }
                 }
-                // Для чисел - перезаписываем только если исходное равно 0
                 else if (detailValue.isDouble()) {
                     double detailNum = detailValue.toDouble();
                     if (detailNum != 0.0) {
-                        if (!fullMovieJson.contains(key) || 
-                            !fullMovieJson[key].isDouble() || 
-                            fullMovieJson[key].toDouble() == 0.0) {
+                        if (!fullMovieJson.contains(key)) {
+                            fullMovieJson[key] = detailValue;
+                        } else if (fullMovieJson[key].isDouble()) {
+                            double existingNum = fullMovieJson[key].toDouble();
+                            if (existingNum == 0.0 || (detailNum > 0 && detailNum > existingNum)) {
+                                fullMovieJson[key] = detailValue;
+                            }
+                        } else {
                             fullMovieJson[key] = detailValue;
                         }
                     }
                 }
-                // Для объектов - рекурсивно объединяем
                 else if (detailValue.isObject()) {
-                    if (!fullMovieJson.contains(key) || !fullMovieJson[key].isObject()) {
+                    if (!fullMovieJson.contains(key)) {
                         fullMovieJson[key] = detailValue;
-                    } else {
+                    } else if (fullMovieJson[key].isObject()) {
                         QJsonObject existingObj = fullMovieJson[key].toObject();
-                        QJsonObject detailObj = detailValue.toObject();
-                        for (auto objIt = detailObj.begin(); objIt != detailObj.end(); ++objIt) {
-                            if (!existingObj.contains(objIt.key()) || 
-                                (existingObj[objIt.key()].isString() && existingObj[objIt.key()].toString().isEmpty())) {
-                                existingObj[objIt.key()] = objIt.value();
+                        QJsonObject detailObjValue = detailValue.toObject();
+                        if (detailObjValue.size() > existingObj.size()) {
+                            fullMovieJson[key] = detailValue;
+                        } else {
+                            for (auto objIt = detailObjValue.begin(); objIt != detailObjValue.end(); ++objIt) {
+                                if (!existingObj.contains(objIt.key())) {
+                                    existingObj[objIt.key()] = objIt.value();
+                                } else if (objIt.value().isString() && existingObj[objIt.key()].isString()) {
+                                    QString existingStr = existingObj[objIt.key()].toString();
+                                    QString newStr = objIt.value().toString();
+                                    if (existingStr.isEmpty() && !newStr.isEmpty()) {
+                                        existingObj[objIt.key()] = objIt.value();
+                                    }
+                                }
                             }
+                            fullMovieJson[key] = existingObj;
                         }
-                        fullMovieJson[key] = existingObj;
+                    } else {
+                        fullMovieJson[key] = detailValue;
                     }
                 }
-                // Для остальных типов - просто добавляем, если отсутствует
                 else {
                     if (!fullMovieJson.contains(key)) {
                         fullMovieJson[key] = detailValue;
                     }
                 }
             }
-            qDebug() << "Full movie details loaded and merged successfully";
-            qDebug() << "Countries in merged JSON:" << (fullMovieJson.contains("countries") ? "yes" : "no");
-            qDebug() << "Persons in merged JSON:" << (fullMovieJson.contains("persons") ? "yes" : "no");
-            qDebug() << "movieLength in merged JSON:" << (fullMovieJson.contains("movieLength") ? "yes" : "no");
         }
     }
     
@@ -256,12 +263,10 @@ Movie KinopoiskAPIClient::parseMovieFromJSON(const QJsonObject& json) {
     QString director = "";
     if (json.contains("persons")) {
         QJsonArray personsArray = json["persons"].toArray();
-        qDebug() << "Parsing persons array, size:" << personsArray.size();
         for (const QJsonValue& value : personsArray) {
             QJsonObject person = value.toObject();
             QString profession = person["enProfession"].toString();
             QString professionRu = person["profession"].toString();
-            qDebug() << "Person profession (en):" << profession << "profession (ru):" << professionRu;
             
             if (profession == "director" || professionRu == "режиссер" || professionRu.contains("режиссер", Qt::CaseInsensitive)) {
                 QString name = person["name"].toString();
@@ -271,7 +276,6 @@ Movie KinopoiskAPIClient::parseMovieFromJSON(const QJsonObject& json) {
                 if (name.isEmpty()) {
                     name = person["alternativeName"].toString();
                 }
-                qDebug() << "Found director:" << name;
                 if (!name.isEmpty()) {
                     director = name;
                     break;
@@ -287,7 +291,6 @@ Movie KinopoiskAPIClient::parseMovieFromJSON(const QJsonObject& json) {
             director = directorValue.toObject()["name"].toString();
         }
     }
-    qDebug() << "Final director:" << director;
     
     QString description = json["description"].toString();
     if (description.isEmpty()) {
@@ -299,13 +302,26 @@ Movie KinopoiskAPIClient::parseMovieFromJSON(const QJsonObject& json) {
         QJsonArray countriesArray = json["countries"].toArray();
         QStringList countries;
         for (const QJsonValue& value : countriesArray) {
-            QString countryName = value.toObject()["name"].toString();
-            if (!countryName.isEmpty()) {
-                countries << countryName;
+            if (value.isObject()) {
+                QJsonObject countryObj = value.toObject();
+                QString countryName = countryObj["name"].toString();
+                if (countryName.isEmpty()) {
+                    countryName = countryObj["enName"].toString();
+                }
+                if (countryName.isEmpty()) {
+                    countryName = countryObj["alternativeName"].toString();
+                }
+                if (!countryName.isEmpty()) {
+                    countries << countryName;
+                }
+            } else if (value.isString()) {
+                QString countryName = value.toString();
+                if (!countryName.isEmpty()) {
+                    countries << countryName;
+                }
             }
         }
         country = countries.join(", ");
-        qDebug() << "Parsed countries:" << country;
     }
     if (country.isEmpty() && json.contains("country")) {
         QJsonValue countryValue = json["country"];
@@ -318,15 +334,42 @@ Movie KinopoiskAPIClient::parseMovieFromJSON(const QJsonObject& json) {
                 if (value.isString()) {
                     countries << value.toString();
                 } else if (value.isObject()) {
-                    QString name = value.toObject()["name"].toString();
+                    QJsonObject countryObj = value.toObject();
+                    QString name = countryObj["name"].toString();
+                    if (name.isEmpty()) {
+                        name = countryObj["enName"].toString();
+                    }
                     if (!name.isEmpty()) {
                         countries << name;
                     }
                 }
             }
             country = countries.join(", ");
+        } else if (countryValue.isObject()) {
+            QJsonObject countryObj = countryValue.toObject();
+            country = countryObj["name"].toString();
+            if (country.isEmpty()) {
+                country = countryObj["enName"].toString();
+            }
         }
-        qDebug() << "Parsed country (alternative):" << country;
+    }
+    if (country.isEmpty() && json.contains("productionCountries")) {
+        QJsonValue productionCountries = json["productionCountries"];
+        if (productionCountries.isArray()) {
+            QStringList countries;
+            QJsonArray countriesArray = productionCountries.toArray();
+            for (const QJsonValue& value : countriesArray) {
+                if (value.isObject()) {
+                    QString name = value.toObject()["name"].toString();
+                    if (!name.isEmpty()) {
+                        countries << name;
+                    }
+                } else if (value.isString()) {
+                    countries << value.toString();
+                }
+            }
+            country = countries.join(", ");
+        }
     }
     
     QString actors = "";
@@ -335,14 +378,18 @@ Movie KinopoiskAPIClient::parseMovieFromJSON(const QJsonObject& json) {
         QStringList actorsList;
         int count = 0;
         for (const QJsonValue& value : personsArray) {
+            if (!value.isObject()) continue;
             QJsonObject person = value.toObject();
             QString profession = person["enProfession"].toString();
             QString professionRu = person["profession"].toString();
             
             bool isActor = (profession == "actor" || 
+                           profession == "актер" ||
                            professionRu.contains("актер", Qt::CaseInsensitive) ||
                            professionRu.contains("актриса", Qt::CaseInsensitive) ||
-                           professionRu == "актер" || professionRu == "актриса");
+                           professionRu == "актер" || 
+                           professionRu == "актриса" ||
+                           professionRu.contains("actor", Qt::CaseInsensitive));
             
             if (isActor && count < 5) {
                 QString name = person["name"].toString();
@@ -352,15 +399,19 @@ Movie KinopoiskAPIClient::parseMovieFromJSON(const QJsonObject& json) {
                 if (name.isEmpty()) {
                     name = person["alternativeName"].toString();
                 }
+                if (name.isEmpty() && person.contains("names")) {
+                    QJsonArray namesArray = person["names"].toArray();
+                    if (!namesArray.isEmpty()) {
+                        name = namesArray[0].toObject()["name"].toString();
+                    }
+                }
                 if (!name.isEmpty()) {
                     actorsList << name;
                     count++;
-                    qDebug() << "Found actor:" << name;
                 }
             }
         }
         actors = actorsList.join(", ");
-        qDebug() << "Total actors found:" << actorsList.size();
     }
     if (actors.isEmpty() && json.contains("actors")) {
         QJsonValue actorsValue = json["actors"];
@@ -373,7 +424,11 @@ Movie KinopoiskAPIClient::parseMovieFromJSON(const QJsonObject& json) {
                 if (value.isString()) {
                     actorsList << value.toString();
                 } else if (value.isObject()) {
-                    QString name = value.toObject()["name"].toString();
+                    QJsonObject actorObj = value.toObject();
+                    QString name = actorObj["name"].toString();
+                    if (name.isEmpty()) {
+                        name = actorObj["enName"].toString();
+                    }
                     if (!name.isEmpty()) {
                         actorsList << name;
                     }
@@ -383,17 +438,67 @@ Movie KinopoiskAPIClient::parseMovieFromJSON(const QJsonObject& json) {
             actors = actorsList.join(", ");
         }
     }
-    qDebug() << "Final actors:" << actors;
-    
+    if (actors.isEmpty() && json.contains("cast")) {
+        QJsonValue castValue = json["cast"];
+        if (castValue.isArray()) {
+            QStringList actorsList;
+            QJsonArray castArray = castValue.toArray();
+            for (const QJsonValue& value : castArray) {
+                if (value.isObject()) {
+                    QJsonObject castObj = value.toObject();
+                    QString name = castObj["name"].toString();
+                    if (name.isEmpty()) {
+                        name = castObj["character"].toString();
+                    }
+                    if (!name.isEmpty()) {
+                        actorsList << name;
+                    }
+                }
+                if (actorsList.size() >= 5) break;
+            }
+            actors = actorsList.join(", ");
+        }
+    }
     int duration = 0;
     if (json.contains("movieLength")) {
-        duration = json["movieLength"].toInt();
+        QJsonValue movieLengthValue = json["movieLength"];
+        if (movieLengthValue.isDouble()) {
+            duration = movieLengthValue.toInt();
+        } else if (movieLengthValue.isString()) {
+            bool ok;
+            duration = movieLengthValue.toString().toInt(&ok);
+            if (!ok) duration = 0;
+        }
     }
     if (duration == 0 && json.contains("length")) {
-        duration = json["length"].toInt();
+        QJsonValue lengthValue = json["length"];
+        if (lengthValue.isDouble()) {
+            duration = lengthValue.toInt();
+        } else if (lengthValue.isString()) {
+            bool ok;
+            duration = lengthValue.toString().toInt(&ok);
+            if (!ok) duration = 0;
+        }
     }
     if (duration == 0 && json.contains("duration")) {
-        duration = json["duration"].toInt();
+        QJsonValue durationValue = json["duration"];
+        if (durationValue.isDouble()) {
+            duration = durationValue.toInt();
+        } else if (durationValue.isString()) {
+            bool ok;
+            duration = durationValue.toString().toInt(&ok);
+            if (!ok) duration = 0;
+        }
+    }
+    if (duration == 0 && json.contains("runtime")) {
+        QJsonValue runtimeValue = json["runtime"];
+        if (runtimeValue.isDouble()) {
+            duration = runtimeValue.toInt();
+        } else if (runtimeValue.isString()) {
+            bool ok;
+            duration = runtimeValue.toString().toInt(&ok);
+            if (!ok) duration = 0;
+        }
     }
     if (json.contains("seriesLength") && duration == 0) {
         QJsonValue seriesLength = json["seriesLength"];
@@ -404,7 +509,15 @@ Movie KinopoiskAPIClient::parseMovieFromJSON(const QJsonObject& json) {
             }
         }
     }
-    qDebug() << "Parsed duration:" << duration;
+    if (json.contains("totalSeriesLength") && duration == 0) {
+        QJsonValue totalSeriesLength = json["totalSeriesLength"];
+        if (totalSeriesLength.type() != QJsonValue::Null && totalSeriesLength.type() != QJsonValue::Undefined) {
+            int totalLen = totalSeriesLength.toInt();
+            if (totalLen > 0) {
+                duration = totalLen;
+            }
+        }
+    }
     
     std::vector<std::string> genres;
     for (const QString& genre : genresList) {
@@ -416,22 +529,10 @@ Movie KinopoiskAPIClient::parseMovieFromJSON(const QJsonObject& json) {
         posterPath = "posters/" + QString::number(id) + ".jpg";
     }
     
-    qDebug() << "=== Final parsed movie data ===";
-    qDebug() << "ID:" << id;
-    qDebug() << "Title:" << name;
-    qDebug() << "Country:" << country;
-    qDebug() << "Actors:" << actors;
-    qDebug() << "Duration:" << duration;
-    qDebug() << "Director:" << director;
-    
     Movie movie(id, name.toStdString(), rating, year, genres, 
                  director.toStdString(), description.toStdString(),
                  posterPath.toStdString(), country.toStdString(), 
                  actors.toStdString(), duration);
-    
-    qDebug() << "Movie created. Country from getter:" << QString::fromStdString(movie.getCountry());
-    qDebug() << "Movie created. Actors from getter:" << QString::fromStdString(movie.getActors());
-    qDebug() << "Movie created. Duration from getter:" << movie.getDuration();
     
     return movie;
 }

@@ -58,7 +58,6 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     cardLayout->setSpacing(6);
     cardLayout->setAlignment(Qt::AlignTop);
 
-    // Постер - фиксированный размер, не может быть перекрыт
     QLabel* posterLabel = new QLabel();
     posterLabel->setFixedSize(300, 450);
     posterLabel->setAlignment(Qt::AlignCenter);
@@ -68,7 +67,6 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     cardLayout->addWidget(posterLabel, 0, Qt::AlignHCenter);
     cardLayout->addSpacing(4);
 
-    // Название фильма - ограниченная высота
     QLabel* titleLabel = new QLabel(QString::fromStdString(movie.getTitle()));
     titleLabel->setStyleSheet("font-size: 15px; font-weight: bold; color: #ff6b35;");
     titleLabel->setWordWrap(true);
@@ -76,7 +74,6 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     titleLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     cardLayout->addWidget(titleLabel);
 
-    // Информация о фильме - ограниченная высота
     QString infoText = QString("%1, %2 • %3")
         .arg(movie.getYear())
         .arg(QString::fromStdString(movie.getCountry()))
@@ -88,7 +85,6 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     infoLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     cardLayout->addWidget(infoLabel);
 
-    // Режиссер - ограниченная высота, может быть скрыт если пустой
     QString directorText = QString::fromStdString(movie.getDirector());
     if (directorText.isEmpty()) {
         directorText = "Режиссер: Не указано";
@@ -102,7 +98,6 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     directorLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     cardLayout->addWidget(directorLabel);
 
-    // Рейтинг и кнопки в одной строке
     QHBoxLayout* ratingButtonsLayout = new QHBoxLayout();
     QLabel* ratingLabel = new QLabel(QString::number(movie.getRating(), 'f', 1));
     ratingLabel->setStyleSheet("font-size: 16px; font-weight: bold; color: #46d369;");
@@ -112,7 +107,6 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     QHBoxLayout* buttonsLayout = new QHBoxLayout();
     buttonsLayout->setSpacing(5);
     
-    // Кнопка "Пуск" (зеленый треугольник) для открытия на кинопоиске
     QPushButton* playBtn = new QPushButton("▶");
     playBtn->setFixedSize(35, 35);
     playBtn->setToolTip("Открыть на Кинопоиске");
@@ -151,12 +145,10 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     ratingButtonsLayout->addLayout(buttonsLayout);
     cardLayout->addLayout(ratingButtonsLayout);
     
-    // Добавляем растягивающийся элемент внизу, чтобы все было прижато к верху
     cardLayout->addStretch();
 
     card->setProperty("movieId", movie.getId());
     
-    // Обработчик кнопки "Пуск" - открывает фильм на кинопоиске с "gg" в URL
     QObject::connect(playBtn, &QPushButton::clicked, [movie]() {
         int movieId = movie.getId();
         if (movieId > 0) {

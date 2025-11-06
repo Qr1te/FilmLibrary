@@ -33,42 +33,65 @@ void MovieManager::loadMovies() {
     std::ifstream file(moviesFile);
 
     if (!file.is_open()) {
-        // File doesn't exist or can't be opened - create empty file
         std::ofstream createFile(moviesFile);
         createFile.close();
         return;
     }
 
     std::string line;
+    std::string fullLine;
     int lineNumber = 0;
 
     while (std::getline(file, line)) {
         lineNumber++;
-        if (!line.empty()) {
-                try {
-                    Movie movie = Movie::fromString(line);
-                    if (movie.getId() != 0) {
-                        // Если путь к постеру пустой, но файл с ID существует, устанавливаем путь
-                        if (movie.getPosterPath().empty() && movie.getId() > 0) {
-                            // Проверяем наличие файла с ID
-                            std::string possiblePath1 = "posters/" + std::to_string(movie.getId()) + ".jpg";
-                            std::string possiblePath2 = "posters/" + std::to_string(movie.getId()) + ".png";
-                            // Простая проверка - если файл существует, устанавливаем путь
-                            // (более точная проверка будет в MainWindow при отображении)
-                            movie.setPosterPath(possiblePath1); // Устанавливаем JPG по умолчанию
-                        }
-                        movies.push_back(movie);
-                    } else {
-                        throw InvalidMovieDataException("Line " + std::to_string(lineNumber));
+        if (line.empty()) {
+            if (!fullLine.empty()) {
+                fullLine += " ";
+            }
+            continue;
+        }
+        
+        if (fullLine.empty()) {
+            fullLine = line;
+        } else {
+            fullLine += " " + line;
+        }
+        
+        int pipeCount = std::count(fullLine.begin(), fullLine.end(), '|');
+        if (pipeCount >= 10) {
+            try {
+                Movie movie = Movie::fromString(fullLine);
+                if (movie.getId() != 0) {
+                    if (movie.getPosterPath().empty() && movie.getId() > 0) {
+                        std::string possiblePath1 = "posters/" + std::to_string(movie.getId()) + ".jpg";
+                        std::string possiblePath2 = "posters/" + std::to_string(movie.getId()) + ".png";
+                        movie.setPosterPath(possiblePath1);
                     }
-                } catch (const std::exception& e) {
-                    std::cout << "Error loading movie data at line " << lineNumber << ": " << e.what() << "\n";
+                    movies.push_back(movie);
+                    fullLine.clear();
+                } else {
+                    throw InvalidMovieDataException("Line " + std::to_string(lineNumber));
                 }
+            } catch (const std::exception& e) {
+                fullLine.clear();
+            }
         }
     }
     
-    // Если файл пустой или не содержит фильмов, оставляем список пустым
-    // Фильмы будут добавляться только через API поиск
+    if (!fullLine.empty()) {
+        try {
+            Movie movie = Movie::fromString(fullLine);
+            if (movie.getId() != 0) {
+                if (movie.getPosterPath().empty() && movie.getId() > 0) {
+                    std::string possiblePath1 = "posters/" + std::to_string(movie.getId()) + ".jpg";
+                    std::string possiblePath2 = "posters/" + std::to_string(movie.getId()) + ".png";
+                    movie.setPosterPath(possiblePath1);
+                }
+                movies.push_back(movie);
+            }
+        } catch (const std::exception& e) {
+        }
+    }
     
     if (collectionManager) {
         collectionManager->updateAllMoviesRef(&movies);
@@ -440,24 +463,21 @@ size_t MovieManager::getFavoritesCount() const {
     return favoriteIds.size();
 }
 
-// duplicate definition removed
-
 void MovieManager::saveMovies() {
-    // Save all movies to file (overwrite)
     std::ofstream file(moviesFile, std::ios::out);
     if (!file.is_open()) {
         throw FileNotFoundException(moviesFile);
     }
     
     for (const auto& movie : movies) {
-        file << movie.toString() << "\n";
+        std::string line = movie.toString();
+        file << line << "\n";
     }
     
     file.close();
 }
 
 void MovieManager::removeMovie(int movieId) {
-    // Find and remove movie from vector
     auto it = std::find_if(movies.begin(), movies.end(),
                           [movieId](const Movie& m) { return m.getId() == movieId; });
     
@@ -465,14 +485,12 @@ void MovieManager::removeMovie(int movieId) {
         throw MovieNotFoundException(movieId);
     }
     
-    // Remove from favorites if present
     auto favIt = std::find(favoriteIds.begin(), favoriteIds.end(), movieId);
     if (favIt != favoriteIds.end()) {
         favoriteIds.erase(favIt);
         saveFavorites();
     }
     
-    // Remove from all collections
     if (collectionManager) {
         auto allCollections = getAllCollectionNames();
         for (const auto& name : allCollections) {
@@ -483,20 +501,16 @@ void MovieManager::removeMovie(int movieId) {
         }
     }
     
-    // Remove from movies vector
     movies.erase(it);
     
-    // Save changes
     saveMovies();
     
-    // Update collection manager reference
     if (collectionManager) {
         collectionManager->updateAllMoviesRef(&movies);
     }
 }
 
 void MovieManager::addMovieToFile(const Movie& movie) {
-    // Generate new ID if needed
     int newId = movie.getId();
     if (newId == 0) {
         newId = 1;
@@ -507,17 +521,13 @@ void MovieManager::addMovieToFile(const Movie& movie) {
         }
     }
     
-    // Create movie with correct ID
     Movie movieWithId = movie;
     movieWithId.setId(newId);
     
-    // Add to vector
     movies.push_back(movieWithId);
     
-    // Save all movies to file
     saveMovies();
     
-    // Update collection manager
     if (collectionManager) {
         collectionManager->updateAllMoviesRef(&movies);
     }

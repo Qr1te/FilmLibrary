@@ -18,6 +18,24 @@ find_package(Qt6 COMPONENTS
 add_executable(beta2 src/main.cpp
         src/movie.cpp
         includes/movie.h
+        src/exceptions/MovieException.cpp
+        includes/exceptions/MovieException.h
+        src/exceptions/FileNotFoundException.cpp
+        includes/exceptions/FileNotFoundException.h
+        src/exceptions/InvalidMovieDataException.cpp
+        includes/exceptions/InvalidMovieDataException.h
+        src/exceptions/MovieNotFoundException.cpp
+        includes/exceptions/MovieNotFoundException.h
+        src/exceptions/DuplicateFavoriteException.cpp
+        includes/exceptions/DuplicateFavoriteException.h
+        src/exceptions/InvalidInputException.cpp
+        includes/exceptions/InvalidInputException.h
+        src/exceptions/CollectionNotFoundException.cpp
+        includes/exceptions/CollectionNotFoundException.h
+        src/exceptions/DuplicateCollectionException.cpp
+        includes/exceptions/DuplicateCollectionException.h
+        src/exceptions/EmptyCollectionException.cpp
+        includes/exceptions/EmptyCollectionException.h
         includes/exceptions/exceptions.h
         src/MovieManager.cpp
         includes/MovieManager.h
