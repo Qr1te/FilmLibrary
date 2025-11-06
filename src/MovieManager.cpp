@@ -33,7 +33,10 @@ void MovieManager::loadMovies() {
     std::ifstream file(moviesFile);
 
     if (!file.is_open()) {
-        throw FileNotFoundException(moviesFile);
+        // File doesn't exist or can't be opened - create empty file
+        std::ofstream createFile(moviesFile);
+        createFile.close();
+        return;
     }
 
     std::string line;
@@ -42,18 +45,30 @@ void MovieManager::loadMovies() {
     while (std::getline(file, line)) {
         lineNumber++;
         if (!line.empty()) {
-            try {
-                Movie movie = Movie::fromString(line);
-                if (movie.getId() != 0) {
-                    movies.push_back(movie);
-                } else {
-                    throw InvalidMovieDataException("Line " + std::to_string(lineNumber));
+                try {
+                    Movie movie = Movie::fromString(line);
+                    if (movie.getId() != 0) {
+                        // Если путь к постеру пустой, но файл с ID существует, устанавливаем путь
+                        if (movie.getPosterPath().empty() && movie.getId() > 0) {
+                            // Проверяем наличие файла с ID
+                            std::string possiblePath1 = "posters/" + std::to_string(movie.getId()) + ".jpg";
+                            std::string possiblePath2 = "posters/" + std::to_string(movie.getId()) + ".png";
+                            // Простая проверка - если файл существует, устанавливаем путь
+                            // (более точная проверка будет в MainWindow при отображении)
+                            movie.setPosterPath(possiblePath1); // Устанавливаем JPG по умолчанию
+                        }
+                        movies.push_back(movie);
+                    } else {
+                        throw InvalidMovieDataException("Line " + std::to_string(lineNumber));
+                    }
+                } catch (const std::exception& e) {
+                    std::cout << "Error loading movie data at line " << lineNumber << ": " << e.what() << "\n";
                 }
-            } catch (const std::exception& e) {
-                std::cout << "Error loading movie data at line " << lineNumber << ": " << e.what() << "\n";
-            }
         }
     }
+    
+    // Если файл пустой или не содержит фильмов, оставляем список пустым
+    // Фильмы будут добавляться только через API поиск
     
     if (collectionManager) {
         collectionManager->updateAllMoviesRef(&movies);
@@ -232,6 +247,10 @@ void MovieManager::getMovieDetails(int id) const {
     }
 }
 
+void MovieManager::reloadMovies() {
+    loadMovies();
+}
+
 void MovieManager::createSampleMoviesFile() {
     std::ofstream file(moviesFile);
     if (!file.is_open()) {
@@ -245,7 +264,7 @@ void MovieManager::createSampleMoviesFile() {
     file << "6|Inception|8.7|2010|Sci-Fi;Action;Thriller|Christopher Nolan|A thief who steals corporate secrets through dream-sharing technology is given a chance to have his criminal history erased.|posters/Inception.png|USA;UK|Leonardo DiCaprio, Marion Cotillard|148\n";
     file << "7|The Matrix|8.7|1999|Sci-Fi;Action|The Wachowskis|A computer hacker learns about the true nature of reality and his role in the war against its controllers.|posters/The Matrix.png|USA|Keanu Reeves, Laurence Fishburne|136\n";
     file << "8|Goodfellas|8.7|1990|Crime;Drama|Martin Scorsese|The story of Henry Hill and his life in the mob.|posters/Goodfellas.png|USA|Robert De Niro, Ray Liotta|146\n";
-    file << "9|The Lord of the Rings: The Fellowship of the Ring|8.8|2001|Fantasy;Adventure|Peter Jackson|A meek Hobbit begins a quest to destroy the One Ring.|posters/The Lord of the Rings The Return of the King.png|New Zealand|Elijah Wood, Ian McKellen|178\n";
+    file << "9|The Lord of the Rings: The Fellowship of the Ring|8.8|2001|Fantasy;Adventure|Peter Jackson|A meek Hobbit begins a quest to destroy the One Ring.|posters/The Lord of the Rings The Fellowship of the Ring.png|New Zealand|Elijah Wood, Ian McKellen|178\n";
     file << "10|Fight Club|8.8|1999|Drama;Thriller|David Fincher|An insomniac office worker forms an underground fight club as a form of therapy.|posters/Fight Club.png|USA|Brad Pitt, Edward Norton|139\n";
     file << "11|Interstellar|8.6|2014|Sci-Fi;Drama|Christopher Nolan|A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.|posters/Interstellar.png|USA;UK|Matthew McConaughey, Anne Hathaway|169\n";
     file << "12|The Lord of the Rings: The Return of the King|8.7|2003|Fantasy;Adventure|Peter Jackson|Gandalf and Aragorn lead the World of Men against Sauron's army.|posters/The Lord of the Rings The Return of the King.png|New Zealand|Elijah Wood, Viggo Mortensen|201\n";
@@ -419,4 +438,87 @@ size_t MovieManager::getMoviesCount() const {
 
 size_t MovieManager::getFavoritesCount() const {
     return favoriteIds.size();
+}
+
+// duplicate definition removed
+
+void MovieManager::saveMovies() {
+    // Save all movies to file (overwrite)
+    std::ofstream file(moviesFile, std::ios::out);
+    if (!file.is_open()) {
+        throw FileNotFoundException(moviesFile);
+    }
+    
+    for (const auto& movie : movies) {
+        file << movie.toString() << "\n";
+    }
+    
+    file.close();
+}
+
+void MovieManager::removeMovie(int movieId) {
+    // Find and remove movie from vector
+    auto it = std::find_if(movies.begin(), movies.end(),
+                          [movieId](const Movie& m) { return m.getId() == movieId; });
+    
+    if (it == movies.end()) {
+        throw MovieNotFoundException(movieId);
+    }
+    
+    // Remove from favorites if present
+    auto favIt = std::find(favoriteIds.begin(), favoriteIds.end(), movieId);
+    if (favIt != favoriteIds.end()) {
+        favoriteIds.erase(favIt);
+        saveFavorites();
+    }
+    
+    // Remove from all collections
+    if (collectionManager) {
+        auto allCollections = getAllCollectionNames();
+        for (const auto& name : allCollections) {
+            MovieCollection* collection = collectionManager->getCollection(name);
+            if (collection && collection->containsMovie(movieId)) {
+                collection->removeMovie(movieId);
+            }
+        }
+    }
+    
+    // Remove from movies vector
+    movies.erase(it);
+    
+    // Save changes
+    saveMovies();
+    
+    // Update collection manager reference
+    if (collectionManager) {
+        collectionManager->updateAllMoviesRef(&movies);
+    }
+}
+
+void MovieManager::addMovieToFile(const Movie& movie) {
+    // Generate new ID if needed
+    int newId = movie.getId();
+    if (newId == 0) {
+        newId = 1;
+        for (const auto& m : movies) {
+            if (m.getId() >= newId) {
+                newId = m.getId() + 1;
+            }
+        }
+    }
+    
+    // Create movie with correct ID
+    Movie movieWithId = movie;
+    movieWithId.setId(newId);
+    
+    // Add to vector
+    movies.push_back(movieWithId);
+    
+    // Save all movies to file
+    saveMovies();
+    
+    // Update collection manager
+    if (collectionManager) {
+        collectionManager->updateAllMoviesRef(&movies);
+    }
 }

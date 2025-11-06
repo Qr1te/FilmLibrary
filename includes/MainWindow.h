@@ -10,7 +10,15 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPixmap>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include "MovieManager.h"
+#include "KinopoiskAPIClient.h"
+#include "PosterManager.h"
+#include "MovieCardFactory.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -25,11 +33,10 @@ public:
 
 private slots:
     void handleSearch();
-    void handleReset();
-    void handleCreateSample();
+    void handleAddMovie();
     void handleSortByRating();
     void handleShowTopN();
-    void handleRefresh();
+    void handleHome();
     void handleAllSelectionChanged();
     void handleFavSelectionChanged();
     void handleCreateCollection();
@@ -41,18 +48,19 @@ private:
     void populateAllMovies(const std::vector<Movie>& movies);
     void populateFavorites();
     void populateCollections();
-    void populatePlayer();
     void populateGenres();
-    QWidget* createMovieCard(const Movie& movie, QWidget* parent = nullptr);
     int selectedMovieIdFromAll() const;
     int selectedMovieIdFromFavorites() const;
-    void loadPosterToLabel(QLabel* label, const Movie& movie);
-    void loadPosterToLabelByTitle(QLabel* label, const QString& movieTitle);
-    void playVideoFile(const QString& filePath);
+    void showMovieInfo(const Movie& movie);
 
 private:
     Ui::MainWindow* ui;
     MovieManager manager;
+    bool isSortedByRating;
+    QNetworkAccessManager* networkManager;
+    KinopoiskAPIClient* apiClient;
+    PosterManager* posterManager;
+    MovieCardFactory* cardFactory;
 };
 
 #endif

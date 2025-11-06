@@ -12,6 +12,7 @@ find_package(Qt6 COMPONENTS
         Core
         Gui
         Widgets
+        Network
         REQUIRED)
 
 add_executable(beta2 src/main.cpp
@@ -24,11 +25,18 @@ add_executable(beta2 src/main.cpp
         includes/MovieCollection.h
         src/MainWindow.cpp
         includes/MainWindow.h
+        src/KinopoiskAPIClient.cpp
+        includes/KinopoiskAPIClient.h
+        src/PosterManager.cpp
+        includes/PosterManager.h
+        src/MovieCardFactory.cpp
+        includes/MovieCardFactory.h
         ui/MainWindow.ui)
 target_link_libraries(beta2
         Qt::Core
         Qt::Gui
         Qt::Widgets
+        Qt::Network
 )
 
 if (EXISTS "${CMAKE_SOURCE_DIR}/posters")
@@ -61,10 +69,62 @@ if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
                 "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/platforms/")
     endif ()
-    foreach (QT_LIB Core Gui Widgets)
+    foreach (QT_LIB Core Gui Widgets Network)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy
                 "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
     endforeach (QT_LIB)
-endif ()
+    
+    # Копируем OpenSSL DLL для поддержки HTTPS
+    if (EXISTS "${QT_INSTALL_PATH}/bin/libcrypto-3-x64.dll")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${QT_INSTALL_PATH}/bin/libcrypto-3-x64.dll"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+    endif()
+    
+    if (EXISTS "${QT_INSTALL_PATH}/bin/libssl-3-x64.dll")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${QT_INSTALL_PATH}/bin/libssl-3-x64.dll"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+    endif()
+    
+    # Альтернативные имена для старых версий OpenSSL
+    if (EXISTS "${QT_INSTALL_PATH}/bin/libcrypto-1_1-x64.dll")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${QT_INSTALL_PATH}/bin/libcrypto-1_1-x64.dll"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+    endif()
+    
+    if (EXISTS "${QT_INSTALL_PATH}/bin/libssl-1_1-x64.dll")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${QT_INSTALL_PATH}/bin/libssl-1_1-x64.dll"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+    endif()
+    
+           # Копируем SSL плагины
+           if (EXISTS "${QT_INSTALL_PATH}/plugins/tls")
+               add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E make_directory
+                       "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/tls")
+               add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       "${QT_INSTALL_PATH}/plugins/tls"
+                       "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/tls")
+           endif()
+           
+           # Копируем плагины для форматов изображений (JPEG, PNG и т.д.)
+           if (EXISTS "${QT_INSTALL_PATH}/plugins/imageformats")
+               add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E make_directory
+                       "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/imageformats")
+               add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       "${QT_INSTALL_PATH}/plugins/imageformats"
+                       "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/imageformats")
+           endif()
+       endif ()
