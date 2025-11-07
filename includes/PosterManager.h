@@ -33,3 +33,4 @@ private:
 
 #endif // BETA2_POSTERMANAGER_H
 
+

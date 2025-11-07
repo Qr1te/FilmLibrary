@@ -6,3 +6,4 @@ MovieNotFoundException::MovieNotFoundException(int id)
 MovieNotFoundException::MovieNotFoundException(const std::string& criteria)
     : MovieException("Movie not found with criteria: " + criteria) {}
 
+

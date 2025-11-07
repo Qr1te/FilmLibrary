@@ -55,7 +55,7 @@ void MovieCollection::addMovie(const Movie& movie) {
         throw DuplicateFavoriteException(id);
     }
     
-    movieIds.push_back(id);
+    movieIds.insert(movieIds.begin(), id);
     save();
 }
 

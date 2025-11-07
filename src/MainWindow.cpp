@@ -61,6 +61,13 @@ MainWindow::MainWindow(QWidget* parent)
 
     connect(ui->searchButton, &QPushButton::clicked, this, &MainWindow::handleSearch);
     connect(ui->addMovieButton, &QPushButton::clicked, this, &MainWindow::handleAddMovie);
+    
+    // Стиль для кнопки "Добавить фильм" - салатовый цвет
+    ui->addMovieButton->setStyleSheet(
+        "QPushButton { background-color: #9FFF9F; color: #1a1a1a; border: none; padding: 8px; border-radius: 4px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #BFFFBF; }"
+        "QPushButton:pressed { background-color: #7FFF7F; }"
+    );
 
     connect(ui->actionSortByRating, &QAction::triggered, this, &MainWindow::handleSortByRating);
     connect(ui->actionTopN, &QAction::triggered, this, &MainWindow::handleShowTopN);
@@ -407,7 +414,7 @@ void MainWindow::handleAddMovie() {
     dialogLayout->setSpacing(15);
     dialogLayout->setContentsMargins(20, 20, 20, 20);
     
-    QLabel* titleLabel = new QLabel("Введите название фильма для поиска:");
+    QLabel* titleLabel = new QLabel("Введите название фильма для добавления:");
     titleLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
     dialogLayout->addWidget(titleLabel);
     
@@ -441,7 +448,7 @@ void MainWindow::handleAddMovie() {
         delete dialog;
         
         if (title.isEmpty()) {
-            QMessageBox::information(this, "Добавить фильм", "Пожалуйста, введите название фильма для поиска");
+            QMessageBox::information(this, "Добавить фильм", "Пожалуйста, введите название фильма для добавления");
             return;
         }
         

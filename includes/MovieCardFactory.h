@@ -35,3 +35,4 @@ private:
 
 #endif // BETA2_MOVIECARDFACTORY_H
 
+

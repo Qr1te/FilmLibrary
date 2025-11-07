@@ -187,7 +187,7 @@ void MovieManager::addToFavorites(int movieId) {
         throw DuplicateFavoriteException(movieId);
     }
 
-    favoriteIds.push_back(movieId);
+    favoriteIds.insert(favoriteIds.begin(), movieId);
     saveFavorites();
     std::cout << "Movie added to favorites!\n";
 }
@@ -524,7 +524,7 @@ void MovieManager::addMovieToFile(const Movie& movie) {
     Movie movieWithId = movie;
     movieWithId.setId(newId);
     
-    movies.push_back(movieWithId);
+    movies.insert(movies.begin(), movieWithId);
     
     saveMovies();
     
