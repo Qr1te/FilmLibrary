@@ -1,6 +1,6 @@
 #include "../../includes/exceptions/DuplicateFavoriteException.h"
 
-DuplicateFavoriteException::DuplicateFavoriteException(int id)
-    : MovieException("Movie with ID " + std::to_string(id) + " is already in favorites") {}
+DuplicateFavoriteException::DuplicateFavoriteException(const std::string& title)
+    : MovieException("Фильм \"" + title + "\" уже находится в избранном") {}
 
 

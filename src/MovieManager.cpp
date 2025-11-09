@@ -4,12 +4,13 @@
 #include <iostream>
 #include <algorithm>
 #include <cctype>
-#include <sstream>
 #include <set>
+#include <utility>
+#include <sstream>
 
-MovieManager::MovieManager(const std::string& moviesFile,
-                           const std::string& favoritesFile)
-    : moviesFile(moviesFile), favoritesFile(favoritesFile) {
+MovieManager::MovieManager(std::string  moviesFile,
+                           std::string  favoritesFile)
+    : moviesFile(std::move(moviesFile)), favoritesFile(std::move(favoritesFile)) {
     try {
         loadMovies();
         loadFavorites();
@@ -184,7 +185,14 @@ void MovieManager::addToFavorites(int movieId) {
 
     auto it = std::find(favoriteIds.begin(), favoriteIds.end(), movieId);
     if (it != favoriteIds.end()) {
-        throw DuplicateFavoriteException(movieId);
+        // Находим фильм по ID, чтобы получить его название
+        auto movieIt = std::find_if(movies.begin(), movies.end(),
+                                   [movieId](const Movie& m) { return m.getId() == movieId; });
+        if (movieIt != movies.end()) {
+            throw DuplicateFavoriteException(movieIt->getTitle());
+        } else {
+            throw DuplicateFavoriteException("Фильм с ID " + std::to_string(movieId));
+        }
     }
 
     favoriteIds.insert(favoriteIds.begin(), movieId);
@@ -511,6 +519,21 @@ void MovieManager::removeMovie(int movieId) {
 }
 
 void MovieManager::addMovieToFile(const Movie& movie) {
+    for (const auto& m : movies) {
+        if (m.getTitle() == movie.getTitle() && m.getYear() == movie.getYear() && movie.getYear() != 0) {
+            throw DuplicateMovieException(m.getTitle(), m.getYear());
+        }
+    }
+    
+    if (movie.getId() != 0) {
+        for (const auto& m : movies) {
+            if (m.getId() == movie.getId()) {
+                // Используем название и год найденного фильма, а не ID
+                throw DuplicateMovieException(m.getTitle(), m.getYear());
+            }
+        }
+    }
+    
     int newId = movie.getId();
     if (newId == 0) {
         newId = 1;

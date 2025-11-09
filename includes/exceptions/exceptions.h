@@ -6,6 +6,7 @@
 #include "InvalidMovieDataException.h"
 #include "MovieNotFoundException.h"
 #include "DuplicateFavoriteException.h"
+#include "DuplicateMovieException.h"
 #include "InvalidInputException.h"
 #include "CollectionNotFoundException.h"
 #include "DuplicateCollectionException.h"

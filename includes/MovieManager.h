@@ -24,8 +24,8 @@ private:
     void validateMovieId(int id) const;
 
 public:
-    MovieManager(const std::string& moviesFile = "movies.txt",
-                 const std::string& favoritesFile = "favorites.txt");
+    MovieManager(std::string  moviesFile = "movies.txt",
+                 std::string  favoritesFile = "favorites.txt");
     ~MovieManager();
 
     void searchByTitle(const std::string& title) const;

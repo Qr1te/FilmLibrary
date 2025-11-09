@@ -52,7 +52,8 @@ void MovieCollection::addMovie(const Movie& movie) {
     validateMovieId(id);
     
     if (containsMovie(id)) {
-        throw DuplicateFavoriteException(id);
+        // Используем название фильма для исключения
+        throw DuplicateFavoriteException(movie.getTitle());
     }
     
     movieIds.insert(movieIds.begin(), id);

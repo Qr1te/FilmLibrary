@@ -1,5 +1,5 @@
 #include "../includes/MainWindow.h"
-#include "ui_MainWindow.h"
+#include "../includes/exceptions/DuplicateMovieException.h"
 
 #include <QInputDialog>
 #include <QMessageBox>
@@ -35,16 +35,24 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QLabel>
+#include <QTabWidget>
+#include <QComboBox>
+#include <QToolBar>
+#include <QStatusBar>
+#include <QAction>
+#include <QSpacerItem>
+#include <QFrame>
+#include <QSizePolicy>
 
 MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), isSortedByRating(false) {
-    ui->setupUi(this);
+    : QMainWindow(parent), isSortedByRating(false) {
+    setupUI();
 
     networkManager = new QNetworkAccessManager(this);
     apiClient = new KinopoiskAPIClient(this);
     posterManager = new PosterManager(this);
     posterManager->setNetworkManager(networkManager);
-    cardFactory = new MovieCardFactory(&manager, posterManager, ui->statusbar);
+    cardFactory = new MovieCardFactory(&manager, posterManager, statusbar);
     
     cardFactory->setOnFavoritesChanged([this]() { populateFavorites(); });
     cardFactory->setOnCollectionsChanged([this]() { populateCollections(); handleCollectionChanged(); });
@@ -59,26 +67,177 @@ MainWindow::MainWindow(QWidget* parent)
     populateFavorites();
     populateCollections();
 
-    connect(ui->searchButton, &QPushButton::clicked, this, &MainWindow::handleSearch);
-    connect(ui->addMovieButton, &QPushButton::clicked, this, &MainWindow::handleAddMovie);
+    connect(searchButton, &QPushButton::clicked, this, &MainWindow::handleSearch);
+    connect(addMovieButton, &QPushButton::clicked, this, &MainWindow::handleAddMovie);
     
     // Стиль для кнопки "Добавить фильм" - салатовый цвет
-    ui->addMovieButton->setStyleSheet(
+    addMovieButton->setStyleSheet(
         "QPushButton { background-color: #9FFF9F; color: #1a1a1a; border: none; padding: 8px; border-radius: 4px; font-weight: bold; }"
         "QPushButton:hover { background-color: #BFFFBF; }"
         "QPushButton:pressed { background-color: #7FFF7F; }"
     );
 
-    connect(ui->actionSortByRating, &QAction::triggered, this, &MainWindow::handleSortByRating);
-    connect(ui->actionTopN, &QAction::triggered, this, &MainWindow::handleShowTopN);
-    connect(ui->actionHome, &QAction::triggered, this, &MainWindow::handleHome);
-    connect(ui->createCollectionButton, &QPushButton::clicked, this, &MainWindow::handleCreateCollection);
-    connect(ui->manageCollectionsButton, &QPushButton::clicked, this, &MainWindow::handleManageCollections);
-    connect(ui->collectionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::handleCollectionChanged);
+    connect(actionSortByRating, &QAction::triggered, this, &MainWindow::handleSortByRating);
+    connect(actionTopN, &QAction::triggered, this, &MainWindow::handleShowTopN);
+    connect(actionHome, &QAction::triggered, this, &MainWindow::handleHome);
+    connect(createCollectionButton, &QPushButton::clicked, this, &MainWindow::handleCreateCollection);
+    connect(manageCollectionsButton, &QPushButton::clicked, this, &MainWindow::handleDeleteCollection);
+    connect(collectionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::handleCollectionChanged);
+    
+    // Стиль для кнопки "Создать коллекцию" - салатовый цвет
+    createCollectionButton->setStyleSheet(
+        "QPushButton { background-color: #9FFF9F; color: #1a1a1a; border: none; padding: 8px; border-radius: 4px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #BFFFBF; }"
+        "QPushButton:pressed { background-color: #7FFF7F; }"
+    );
+    
+    // Стиль для кнопки "Удалить коллекцию" - красный цвет
+    manageCollectionsButton->setStyleSheet(
+        "QPushButton { background-color: #FF6B6B; color: white; border: none; padding: 8px; border-radius: 4px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #FF8E8E; }"
+        "QPushButton:pressed { background-color: #E55555; }"
+    );
 }
 
 MainWindow::~MainWindow() {
-    delete ui;
+    // Qt автоматически удалит дочерние виджеты
+}
+
+void MainWindow::setupUI() {
+    // Настройка главного окна
+    setWindowTitle("Менеджер фильмов");
+    resize(1100, 720);
+    
+    // Центральный виджет
+    centralWidget = new QWidget(this);
+    setCentralWidget(centralWidget);
+    
+    // Главный layout
+    mainLayout = new QVBoxLayout(centralWidget);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
+    
+    // Поисковая панель
+    searchLayout = new QHBoxLayout();
+    searchLayout->setContentsMargins(10, 10, 10, 10);
+    
+    addMovieButton = new QPushButton("Добавить фильм", centralWidget);
+    searchLayout->addWidget(addMovieButton);
+    
+    searchLineEdit = new QLineEdit(centralWidget);
+    searchLineEdit->setPlaceholderText("Поиск по названию...");
+    searchLayout->addWidget(searchLineEdit);
+    
+    genreComboBox = new QComboBox(centralWidget);
+    genreComboBox->setEditable(true);
+    genreComboBox->setPlaceholderText("Жанр");
+    searchLayout->addWidget(genreComboBox);
+    
+    searchButton = new QPushButton("Поиск", centralWidget);
+    searchLayout->addWidget(searchButton);
+    
+    mainLayout->addLayout(searchLayout);
+    
+    // Tab Widget
+    tabWidget = new QTabWidget(centralWidget);
+    tabWidget->setCurrentIndex(0);
+    
+    // Вкладка "Все фильмы"
+    tabAll = new QWidget();
+    verticalLayoutAll = new QVBoxLayout(tabAll);
+    verticalLayoutAll->setContentsMargins(0, 0, 0, 0);
+    
+    scrollAreaAll = new QScrollArea(tabAll);
+    scrollAreaAll->setWidgetResizable(true);
+    scrollAreaAll->setFrameShape(QFrame::NoFrame);
+    
+    scrollAreaWidgetContentsAll = new QWidget();
+    scrollAreaWidgetContentsAll->setGeometry(0, 0, 1062, 617);
+    gridLayoutMovies = new QGridLayout(scrollAreaWidgetContentsAll);
+    gridLayoutMovies->setContentsMargins(10, 10, 10, 10);
+    gridLayoutMovies->setSpacing(10);
+    
+    scrollAreaAll->setWidget(scrollAreaWidgetContentsAll);
+    verticalLayoutAll->addWidget(scrollAreaAll);
+    
+    tabWidget->addTab(tabAll, "Все фильмы");
+    
+    // Вкладка "Избранное"
+    tabFavorites = new QWidget();
+    verticalLayoutFav = new QVBoxLayout(tabFavorites);
+    verticalLayoutFav->setContentsMargins(0, 0, 0, 0);
+    
+    scrollAreaFavorites = new QScrollArea(tabFavorites);
+    scrollAreaFavorites->setWidgetResizable(true);
+    scrollAreaFavorites->setFrameShape(QFrame::NoFrame);
+    
+    scrollAreaWidgetContentsFavorites = new QWidget();
+    scrollAreaWidgetContentsFavorites->setGeometry(0, 0, 1062, 617);
+    gridLayoutFavorites = new QGridLayout(scrollAreaWidgetContentsFavorites);
+    gridLayoutFavorites->setContentsMargins(10, 10, 10, 10);
+    gridLayoutFavorites->setSpacing(10);
+    
+    scrollAreaFavorites->setWidget(scrollAreaWidgetContentsFavorites);
+    verticalLayoutFav->addWidget(scrollAreaFavorites);
+    
+    tabWidget->addTab(tabFavorites, "Избранное");
+    
+    // Вкладка "Коллекции"
+    tabCollections = new QWidget();
+    verticalLayoutCollections = new QVBoxLayout(tabCollections);
+    verticalLayoutCollections->setContentsMargins(0, 0, 0, 0);
+    
+    horizontalLayoutCollectionSelector = new QHBoxLayout();
+    horizontalLayoutCollectionSelector->setContentsMargins(10, 10, 10, 10);
+    
+    collectionLabel = new QLabel("Выберите коллекцию:", tabCollections);
+    horizontalLayoutCollectionSelector->addWidget(collectionLabel);
+    
+    collectionComboBox = new QComboBox(tabCollections);
+    collectionComboBox->setEditable(false);
+    horizontalLayoutCollectionSelector->addWidget(collectionComboBox);
+    
+    createCollectionButton = new QPushButton("Создать коллекцию", tabCollections);
+    horizontalLayoutCollectionSelector->addWidget(createCollectionButton);
+    
+    manageCollectionsButton = new QPushButton("Удалить коллекцию", tabCollections);
+    horizontalLayoutCollectionSelector->addWidget(manageCollectionsButton);
+    
+    horizontalLayoutCollectionSelector->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+    
+    verticalLayoutCollections->addLayout(horizontalLayoutCollectionSelector);
+    
+    scrollAreaCollections = new QScrollArea(tabCollections);
+    scrollAreaCollections->setWidgetResizable(true);
+    scrollAreaCollections->setFrameShape(QFrame::NoFrame);
+    
+    scrollAreaWidgetContentsCollections = new QWidget();
+    scrollAreaWidgetContentsCollections->setGeometry(0, 0, 1062, 617);
+    gridLayoutCollections = new QGridLayout(scrollAreaWidgetContentsCollections);
+    gridLayoutCollections->setContentsMargins(10, 10, 10, 10);
+    gridLayoutCollections->setSpacing(10);
+    
+    scrollAreaCollections->setWidget(scrollAreaWidgetContentsCollections);
+    verticalLayoutCollections->addWidget(scrollAreaCollections);
+    
+    tabWidget->addTab(tabCollections, "Коллекции");
+    
+    mainLayout->addWidget(tabWidget, 1); // stretch factor = 1
+    
+    // Toolbar
+    mainToolBar = addToolBar("mainToolBar");
+    
+    actionHome = new QAction("Главная", this);
+    mainToolBar->addAction(actionHome);
+    
+    actionSortByRating = new QAction("Сортировать по рейтингу", this);
+    mainToolBar->addAction(actionSortByRating);
+    
+    actionTopN = new QAction("Показать топ N", this);
+    mainToolBar->addAction(actionTopN);
+    
+    // Status bar
+    statusbar = statusBar();
 }
 
 void MainWindow::setupModelsAndViews() {
@@ -108,8 +267,8 @@ void MainWindow::setupModelsAndViews() {
 }
 
 void MainWindow::populateGenres() {
-    ui->genreComboBox->clear();
-    ui->genreComboBox->addItem("");
+    genreComboBox->clear();
+    genreComboBox->addItem("");
     QSet<QString> genres;
     for (const auto& m : manager.getAllMovies()) {
         const auto& movieGenres = m.getGenres();
@@ -119,7 +278,7 @@ void MainWindow::populateGenres() {
     }
     QStringList sorted = QStringList(genres.begin(), genres.end());
     sorted.sort(Qt::CaseInsensitive);
-    ui->genreComboBox->addItems(sorted);
+    genreComboBox->addItems(sorted);
 }
 
 void MainWindow::showMovieInfo(const Movie& movie) {
@@ -223,12 +382,12 @@ void MainWindow::showMovieInfo(const Movie& movie) {
 }
 
 void MainWindow::populateAllMovies(const std::vector<Movie>& movies) {
-    if (!ui->gridLayoutMovies) {
+    if (!gridLayoutMovies) {
         return;
     }
     
     QLayoutItem* item;
-    while ((item = ui->gridLayoutMovies->takeAt(0)) != nullptr) {
+    while ((item = gridLayoutMovies->takeAt(0)) != nullptr) {
         if (item->widget()) {
             item->widget()->deleteLater();
         }
@@ -239,9 +398,9 @@ void MainWindow::populateAllMovies(const std::vector<Movie>& movies) {
     int row = 0, col = 0;
     
     for (const auto& movie : movies) {
-        QWidget* card = cardFactory->createMovieCard(movie, ui->scrollAreaWidgetContentsAll);
+        QWidget* card = cardFactory->createMovieCard(movie, scrollAreaWidgetContentsAll);
         if (card) {
-            ui->gridLayoutMovies->addWidget(card, row, col);
+            gridLayoutMovies->addWidget(card, row, col);
             
             col++;
             if (col >= columns) {
@@ -253,13 +412,13 @@ void MainWindow::populateAllMovies(const std::vector<Movie>& movies) {
 }
 
 void MainWindow::populateFavorites() {
-    if (!ui->gridLayoutFavorites) {
+    if (!gridLayoutFavorites) {
         return;
     }
     
     auto favs = manager.getFavoriteMovies();
     QLayoutItem* item;
-    while ((item = ui->gridLayoutFavorites->takeAt(0)) != nullptr) {
+    while ((item = gridLayoutFavorites->takeAt(0)) != nullptr) {
         if (item->widget()) {
             item->widget()->deleteLater();
         }
@@ -270,9 +429,9 @@ void MainWindow::populateFavorites() {
     int row = 0, col = 0;
     
     for (const auto& movie : favs) {
-        QWidget* card = cardFactory->createMovieCard(movie, ui->scrollAreaWidgetContentsFavorites);
+        QWidget* card = cardFactory->createMovieCard(movie, scrollAreaWidgetContentsFavorites);
         if (card) {
-            ui->gridLayoutFavorites->addWidget(card, row, col);
+            gridLayoutFavorites->addWidget(card, row, col);
             
             col++;
             if (col >= columns) {
@@ -284,19 +443,19 @@ void MainWindow::populateFavorites() {
 }
 
 void MainWindow::populateCollections() {
-    ui->collectionComboBox->clear();
+    collectionComboBox->clear();
     auto collectionNames = manager.getAllCollectionNames();
     
     for (const auto& name : collectionNames) {
-        ui->collectionComboBox->addItem(QString::fromUtf8(name.c_str(), name.length()));
+        collectionComboBox->addItem(QString::fromUtf8(name.c_str(), name.length()));
     }
     
-    if (ui->collectionComboBox->count() > 0) {
+    if (collectionComboBox->count() > 0) {
         handleCollectionChanged();
     } else {
-        if (ui->gridLayoutCollections) {
+        if (gridLayoutCollections) {
             QLayoutItem* item;
-            while ((item = ui->gridLayoutCollections->takeAt(0)) != nullptr) {
+            while ((item = gridLayoutCollections->takeAt(0)) != nullptr) {
                 if (item->widget()) {
                     item->widget()->deleteLater();
                 }
@@ -307,13 +466,13 @@ void MainWindow::populateCollections() {
 }
 
 void MainWindow::handleCollectionChanged() {
-    if (!ui->gridLayoutCollections) {
+    if (!gridLayoutCollections) {
         return;
     }
-    QString collectionName = ui->collectionComboBox->currentText();
+    QString collectionName = collectionComboBox->currentText();
     if (collectionName.isEmpty()) {
         QLayoutItem* item;
-        while ((item = ui->gridLayoutCollections->takeAt(0)) != nullptr) {
+        while ((item = gridLayoutCollections->takeAt(0)) != nullptr) {
             if (item->widget()) {
                 item->widget()->deleteLater();
             }
@@ -336,7 +495,7 @@ void MainWindow::handleCollectionChanged() {
     auto movies = collection->getMovies();
     
     QLayoutItem* item;
-    while ((item = ui->gridLayoutCollections->takeAt(0)) != nullptr) {
+    while ((item = gridLayoutCollections->takeAt(0)) != nullptr) {
         if (item->widget()) {
             item->widget()->deleteLater();
         }
@@ -347,9 +506,9 @@ void MainWindow::handleCollectionChanged() {
     int row = 0, col = 0;
     
     for (const auto& movie : movies) {
-        QWidget* card = cardFactory->createMovieCard(movie, ui->scrollAreaWidgetContentsCollections);
+        QWidget* card = cardFactory->createMovieCard(movie, scrollAreaWidgetContentsCollections);
         if (card) {
-            ui->gridLayoutCollections->addWidget(card, row, col);
+            gridLayoutCollections->addWidget(card, row, col);
             
             col++;
             if (col >= columns) {
@@ -361,8 +520,8 @@ void MainWindow::handleCollectionChanged() {
 }
 
 void MainWindow::handleSearch() {
-    const QString title = ui->searchLineEdit->text().trimmed();
-    const QString genre = ui->genreComboBox->currentText().trimmed();
+    const QString title = searchLineEdit->text().trimmed();
+    const QString genre = genreComboBox->currentText().trimmed();
 
     try {
         std::vector<Movie> filtered = manager.getAllMovies();
@@ -391,7 +550,7 @@ void MainWindow::handleSearch() {
         }
         
         populateAllMovies(filtered);
-        ui->statusbar->showMessage(QString("Found %1 movie(s)").arg(filtered.size()), 2000);
+        statusbar->showMessage(QString("Found %1 movie(s)").arg(filtered.size()), 2000);
     } catch (const std::exception& e) {
         QMessageBox::warning(this, "Search error", e.what());
     }
@@ -455,7 +614,7 @@ void MainWindow::handleAddMovie() {
         apiClient->searchMovie(title, 
         [this](const Movie& movie, const QString& posterUrl) {
         if (movie.getId() == 0) {
-            ui->statusbar->showMessage("Фильм не найден", 3000);
+            statusbar->showMessage("Фильм не найден", 3000);
             QMessageBox::information(this, "Результат поиска", "Фильм не найден.\n\nПопробуйте:\n- Проверить название фильма\n- Использовать оригинальное название\n- Добавить API ключ для расширенного поиска");
             return;
         }
@@ -512,7 +671,7 @@ void MainWindow::handleAddMovie() {
             QString savePath = posterDir + sep + posterFileName;
 
             if (!posterUrl.isEmpty()) {
-                ui->statusbar->showMessage("Загрузка постера...", 0);
+                statusbar->showMessage("Загрузка постера...", 0);
                 posterManager->downloadPoster(posterUrl, savePath, [this, movie, posterDir, sep, movieId = movie.getId()](bool success) {
                     Movie movieToAdd = movie;
                     QString relativePath = "";
@@ -541,7 +700,7 @@ void MainWindow::handleAddMovie() {
                             }
                         }
                         movieToAdd.setPosterPath(relativePath.toStdString());
-                        ui->statusbar->showMessage("Постер загружен!", 2000);
+                        statusbar->showMessage("Постер загружен!", 2000);
             } else {
                         relativePath = "posters/" + QString::number(movieId) + ".jpg";
                         movieToAdd.setPosterPath(relativePath.toStdString());
@@ -551,9 +710,13 @@ void MainWindow::handleAddMovie() {
                         manager.addMovieToFile(movieToAdd);
                         manager.reloadMovies();
                         populateAllMovies(manager.getAllMovies());
+                        populateFavorites();
                         populateGenres();
-                        ui->statusbar->showMessage("Фильм добавлен в фильмотеку!", 3000);
+                        statusbar->showMessage("Фильм добавлен в фильмотеку!", 3000);
                         QMessageBox::information(this, "Успех", "Фильм успешно добавлен в фильмотеку!");
+                    } catch (const DuplicateMovieException& e) {
+                        QMessageBox::warning(this, "Дубликат фильма", QString::fromStdString(e.what()));
+                        statusbar->showMessage("Фильм уже существует в фильмотеке", 3000);
                     } catch (const std::exception& e) {
                         QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
                     }
@@ -563,9 +726,13 @@ void MainWindow::handleAddMovie() {
                     manager.addMovieToFile(movie);
                     manager.reloadMovies();
                     populateAllMovies(manager.getAllMovies());
+                    populateFavorites();
                     populateGenres();
-                    ui->statusbar->showMessage("Фильм добавлен в фильмотеку!", 3000);
+                    statusbar->showMessage("Фильм добавлен в фильмотеку!", 3000);
                     QMessageBox::information(this, "Успех", "Фильм успешно добавлен в фильмотеку!");
+                } catch (const DuplicateMovieException& e) {
+                    QMessageBox::warning(this, "Дубликат фильма", QString::fromStdString(e.what()));
+                    statusbar->showMessage("Фильм уже существует в фильмотеке", 3000);
     } catch (const std::exception& e) {
                     QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
                 }
@@ -573,7 +740,7 @@ void MainWindow::handleAddMovie() {
         }
     },
     [this](const QString& errorMessage) {
-        ui->statusbar->showMessage("Ошибка поиска: " + errorMessage, 3000);
+        statusbar->showMessage("Ошибка поиска: " + errorMessage, 3000);
         QMessageBox::warning(this, "Ошибка поиска", "Не удалось выполнить поиск фильма:\n" + errorMessage);
     });
     } else {
@@ -587,7 +754,7 @@ void MainWindow::handleSortByRating() {
         manager.sortByRating();
         isSortedByRating = true;
         populateAllMovies(manager.getAllMovies());
-        ui->statusbar->showMessage("Sorted by rating", 2000);
+        statusbar->showMessage("Sorted by rating", 2000);
     } catch (const std::exception& e) {
         QMessageBox::warning(this, "Sort error", e.what());
     }
@@ -600,7 +767,7 @@ void MainWindow::handleShowTopN() {
     try {
         auto top = manager.topRatedResults(n);
         populateAllMovies(top);
-        ui->statusbar->showMessage("Showing top N", 2000);
+        statusbar->showMessage("Showing top N", 2000);
     } catch (const std::exception& e) {
         QMessageBox::warning(this, "Top N error", e.what());
     }
@@ -623,7 +790,7 @@ void MainWindow::handleHome() {
         populateFavorites();
         populateCollections();
         populateGenres();
-        ui->statusbar->showMessage("Home", 1500);
+        statusbar->showMessage("Home", 1500);
     } catch (const std::exception& e) {
         QMessageBox::warning(this, "Home", e.what());
     }
@@ -649,19 +816,19 @@ void MainWindow::handleCreateCollection() {
         MovieCollection* collection = manager.createCollection(std::string(utf8Name.constData(), utf8Name.length()));
         QMessageBox::information(this, "Success",
                                  QString("Collection '%1' created successfully!").arg(name));
-        ui->statusbar->showMessage(QString("Collection '%1' created").arg(name), 3000);
+        statusbar->showMessage(QString("Collection '%1' created").arg(name), 3000);
         populateCollections();
     } catch (const std::exception& e) {
         QMessageBox::warning(this, "Error", e.what());
     }
 }
 
-void MainWindow::handleManageCollections() {
+void MainWindow::handleDeleteCollection() {
     auto collectionNames = manager.getAllCollectionNames();
     
     if (collectionNames.empty()) {
-        QMessageBox::information(this, "Collections",
-                                 "No collections available.\nUse 'Create Collection' to create one.");
+        QMessageBox::information(this, "Удалить коллекцию",
+                                 "Нет доступных коллекций.\nИспользуйте 'Создать коллекцию' для создания новой.");
         return;
     }
 
@@ -671,96 +838,33 @@ void MainWindow::handleManageCollections() {
     }
 
     bool ok;
-    QString selected = QInputDialog::getItem(this, "Manage Collections",
-                                            "Select collection:", names, 0, false, &ok);
+    QString selected = QInputDialog::getItem(this, "Удалить коллекцию",
+                                            "Выберите коллекцию для удаления:", names, 0, false, &ok);
     if (!ok || selected.isEmpty()) {
         return;
     }
 
     auto* collManager = manager.getCollectionManager();
     if (!collManager) {
-        QMessageBox::warning(this, "Error", "Collection manager not available");
+        QMessageBox::warning(this, "Ошибка", "Менеджер коллекций недоступен");
         return;
     }
 
-    QByteArray utf8Selected = selected.toUtf8();
-    MovieCollection* collection = collManager->getCollection(std::string(utf8Selected.constData(), utf8Selected.length()));
-    if (!collection) {
-        QMessageBox::warning(this, "Error", "Collection not found");
-        return;
-    }
-
-    QStringList items;
-    items << "Add movie" << "Remove movie" << "View collection" << "Delete collection";
-    QString action = QInputDialog::getItem(this, "Collection Action",
-                                           QString("What to do with '%1'?").arg(selected),
-                                           items, 0, false, &ok);
-    if (!ok) {
-        return;
-    }
-
-    if (action == "Add movie") {
-        int id = selectedMovieIdFromAll();
-        if (id < 0) {
-            QMessageBox::information(this, "Add to Collection",
-                                     "Select a movie in All Movies.");
-            return;
-        }
-        const Movie* movie = manager.findMovieById(id);
-        if (movie) {
-            try {
-                collection->addMovie(*movie);
-                QMessageBox::information(this, "Success",
-                                         QString("Movie added to collection '%1'").arg(selected));
-                ui->statusbar->showMessage("Movie added to collection", 2000);
-                populateCollections();
-                handleCollectionChanged();
-            } catch (const std::exception& e) {
-                QMessageBox::warning(this, "Error", e.what());
-            }
-        }
-    } else if (action == "Remove movie") {
-        int id = selectedMovieIdFromAll();
-        if (id < 0) {
-            QMessageBox::information(this, "Remove from Collection",
-                                     "Select a movie first.");
-            return;
-        }
+    int ret = QMessageBox::question(this, "Удалить коллекцию",
+                                    QString("Вы уверены, что хотите удалить коллекцию '%1'?")
+                                    .arg(selected),
+                                    QMessageBox::Yes | QMessageBox::No);
+    if (ret == QMessageBox::Yes) {
         try {
-            collection->removeMovie(id);
-            QMessageBox::information(this, "Success",
-                                     QString("Movie removed from collection '%1'").arg(selected));
-            ui->statusbar->showMessage("Movie removed from collection", 2000);
+            QByteArray utf8Selected = selected.toUtf8();
+            collManager->deleteCollection(std::string(utf8Selected.constData(), utf8Selected.length()));
+            QMessageBox::information(this, "Успех",
+                                     QString("Коллекция '%1' удалена").arg(selected));
+            statusbar->showMessage("Коллекция удалена", 2000);
             populateCollections();
             handleCollectionChanged();
         } catch (const std::exception& e) {
-            QMessageBox::warning(this, "Error", e.what());
-        }
-    } else if (action == "View collection") {
-        auto movies = collection->getMovies();
-        QStringList movieTitles;
-        for (const auto& m : movies) {
-            movieTitles << QString::fromStdString(m.getTitle());
-        }
-        QMessageBox::information(this, QString("Collection: %1").arg(selected),
-                                 movieTitles.isEmpty() ? "Collection is empty" :
-                                 movieTitles.join("\n"));
-    } else if (action == "Delete collection") {
-        int ret = QMessageBox::question(this, "Delete Collection",
-                                        QString("Are you sure you want to delete '%1'?")
-                                        .arg(selected),
-                                        QMessageBox::Yes | QMessageBox::No);
-        if (ret == QMessageBox::Yes) {
-            try {
-                QByteArray utf8Selected = selected.toUtf8();
-                collManager->deleteCollection(std::string(utf8Selected.constData(), utf8Selected.length()));
-                QMessageBox::information(this, "Success",
-                                         QString("Collection '%1' deleted").arg(selected));
-                ui->statusbar->showMessage("Collection deleted", 2000);
-                populateCollections();
-            } catch (const std::exception& e) {
-                QMessageBox::warning(this, "Error", e.what());
-            }
+            QMessageBox::warning(this, "Ошибка", e.what());
         }
     }
 }

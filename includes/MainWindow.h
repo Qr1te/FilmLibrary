@@ -15,14 +15,19 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QTabWidget>
+#include <QScrollArea>
+#include <QGridLayout>
+#include <QToolBar>
+#include <QStatusBar>
+#include <QAction>
+#include <QSpacerItem>
 #include "MovieManager.h"
 #include "KinopoiskAPIClient.h"
 #include "PosterManager.h"
 #include "MovieCardFactory.h"
-
-QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
-QT_END_NAMESPACE
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -40,10 +45,11 @@ private slots:
     void handleAllSelectionChanged();
     void handleFavSelectionChanged();
     void handleCreateCollection();
-    void handleManageCollections();
+    void handleDeleteCollection();
     void handleCollectionChanged();
 
 private:
+    void setupUI();
     void setupModelsAndViews();
     void populateAllMovies(const std::vector<Movie>& movies);
     void populateFavorites();
@@ -54,7 +60,56 @@ private:
     void showMovieInfo(const Movie& movie);
 
 private:
-    Ui::MainWindow* ui;
+
+    QWidget* centralWidget;
+    QVBoxLayout* mainLayout;
+    
+
+    QHBoxLayout* searchLayout;
+    QPushButton* addMovieButton;
+    QLineEdit* searchLineEdit;
+    QComboBox* genreComboBox;
+    QPushButton* searchButton;
+    
+
+    QTabWidget* tabWidget;
+    
+
+    QWidget* tabAll;
+    QVBoxLayout* verticalLayoutAll;
+    QScrollArea* scrollAreaAll;
+    QWidget* scrollAreaWidgetContentsAll;
+    QGridLayout* gridLayoutMovies;
+    
+
+    QWidget* tabFavorites;
+    QVBoxLayout* verticalLayoutFav;
+    QScrollArea* scrollAreaFavorites;
+    QWidget* scrollAreaWidgetContentsFavorites;
+    QGridLayout* gridLayoutFavorites;
+    
+
+    QWidget* tabCollections;
+    QVBoxLayout* verticalLayoutCollections;
+    QHBoxLayout* horizontalLayoutCollectionSelector;
+    QLabel* collectionLabel;
+    QComboBox* collectionComboBox;
+    QPushButton* createCollectionButton;
+    QPushButton* manageCollectionsButton;
+    QScrollArea* scrollAreaCollections;
+    QWidget* scrollAreaWidgetContentsCollections;
+    QGridLayout* gridLayoutCollections;
+    
+
+    QToolBar* mainToolBar;
+    QAction* actionHome;
+    QAction* actionSortByRating;
+    QAction* actionTopN;
+    
+
+    QStatusBar* statusbar;
+    
+
     MovieManager manager;
     bool isSortedByRating;
     QNetworkAccessManager* networkManager;

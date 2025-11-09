@@ -4,8 +4,6 @@ project(beta2)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/ui ui)
 
 
 find_package(Qt6 COMPONENTS
@@ -28,6 +26,8 @@ add_executable(beta2 src/main.cpp
         includes/exceptions/MovieNotFoundException.h
         src/exceptions/DuplicateFavoriteException.cpp
         includes/exceptions/DuplicateFavoriteException.h
+        src/exceptions/DuplicateMovieException.cpp
+        includes/exceptions/DuplicateMovieException.h
         src/exceptions/InvalidInputException.cpp
         includes/exceptions/InvalidInputException.h
         src/exceptions/CollectionNotFoundException.cpp
@@ -48,8 +48,7 @@ add_executable(beta2 src/main.cpp
         src/PosterManager.cpp
         includes/PosterManager.h
         src/MovieCardFactory.cpp
-        includes/MovieCardFactory.h
-        ui/MainWindow.ui)
+        includes/MovieCardFactory.h)
 target_link_libraries(beta2
         Qt::Core
         Qt::Gui

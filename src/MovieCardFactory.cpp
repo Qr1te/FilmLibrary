@@ -131,7 +131,7 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     moreBtn->setToolTip("Дополнительные опции");
     moreBtn->setStyleSheet("background-color: #555; color: #ccc; font-size: 22px; border-radius: 4px; border: 1px solid #777;");
     
-    QPushButton* infoBtn = new QPushButton("Инфо");
+    QPushButton* infoBtn = new QPushButton("Информация");
     infoBtn->setStyleSheet(
         "background-color: #ff6b35;"
         "color: white; font-weight: bold; padding: 8px; border-radius: 4px; border: none;"
