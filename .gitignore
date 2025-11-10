@@ -1,5 +1,5 @@
 # CLion specific files
-../.idea/
+.idea/
 cmake-build-*/
 *.iml
 *.ipr

@@ -104,20 +104,17 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::setupUI() {
-    // Настройка главного окна
+
     setWindowTitle("Менеджер фильмов");
     resize(1100, 720);
     
-    // Центральный виджет
     centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
     
-    // Главный layout
     mainLayout = new QVBoxLayout(centralWidget);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
     
-    // Поисковая панель
     searchLayout = new QHBoxLayout();
     searchLayout->setContentsMargins(10, 10, 10, 10);
     
@@ -222,9 +219,8 @@ void MainWindow::setupUI() {
     
     tabWidget->addTab(tabCollections, "Коллекции");
     
-    mainLayout->addWidget(tabWidget, 1); // stretch factor = 1
+    mainLayout->addWidget(tabWidget, 1);
     
-    // Toolbar
     mainToolBar = addToolBar("mainToolBar");
     
     actionHome = new QAction("Главная", this);
@@ -236,7 +232,7 @@ void MainWindow::setupUI() {
     actionTopN = new QAction("Показать топ N", this);
     mainToolBar->addAction(actionTopN);
     
-    // Status bar
+
     statusbar = statusBar();
 }
 
