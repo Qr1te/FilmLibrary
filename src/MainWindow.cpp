@@ -70,7 +70,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(searchButton, &QPushButton::clicked, this, &MainWindow::handleSearch);
     connect(addMovieButton, &QPushButton::clicked, this, &MainWindow::handleAddMovie);
     
-    // Стиль для кнопки "Добавить фильм" - салатовый цвет
+
     addMovieButton->setStyleSheet(
         "QPushButton { background-color: #9FFF9F; color: #1a1a1a; border: none; padding: 8px; border-radius: 4px; font-weight: bold; }"
         "QPushButton:hover { background-color: #BFFFBF; }"
@@ -84,23 +84,21 @@ MainWindow::MainWindow(QWidget* parent)
     connect(manageCollectionsButton, &QPushButton::clicked, this, &MainWindow::handleDeleteCollection);
     connect(collectionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::handleCollectionChanged);
     
-    // Стиль для кнопки "Создать коллекцию" - салатовый цвет
     createCollectionButton->setStyleSheet(
         "QPushButton { background-color: #9FFF9F; color: #1a1a1a; border: none; padding: 8px; border-radius: 4px; font-weight: bold; }"
         "QPushButton:hover { background-color: #BFFFBF; }"
         "QPushButton:pressed { background-color: #7FFF7F; }"
     );
     
-    // Стиль для кнопки "Удалить коллекцию" - красный цвет
     manageCollectionsButton->setStyleSheet(
         "QPushButton { background-color: #FF6B6B; color: white; border: none; padding: 8px; border-radius: 4px; font-weight: bold; }"
         "QPushButton:hover { background-color: #FF8E8E; }"
-        "QPushButton:pressed { background-color: #E55555; }"
+        "QPushButton:pressed { background-color: #E55555;}"
     );
 }
 
 MainWindow::~MainWindow() {
-    // Qt автоматически удалит дочерние виджеты
+
 }
 
 void MainWindow::setupUI() {
@@ -135,11 +133,11 @@ void MainWindow::setupUI() {
     
     mainLayout->addLayout(searchLayout);
     
-    // Tab Widget
+
     tabWidget = new QTabWidget(centralWidget);
     tabWidget->setCurrentIndex(0);
     
-    // Вкладка "Все фильмы"
+
     tabAll = new QWidget();
     verticalLayoutAll = new QVBoxLayout(tabAll);
     verticalLayoutAll->setContentsMargins(0, 0, 0, 0);
@@ -159,7 +157,7 @@ void MainWindow::setupUI() {
     
     tabWidget->addTab(tabAll, "Все фильмы");
     
-    // Вкладка "Избранное"
+
     tabFavorites = new QWidget();
     verticalLayoutFav = new QVBoxLayout(tabFavorites);
     verticalLayoutFav->setContentsMargins(0, 0, 0, 0);
@@ -178,8 +176,7 @@ void MainWindow::setupUI() {
     verticalLayoutFav->addWidget(scrollAreaFavorites);
     
     tabWidget->addTab(tabFavorites, "Избранное");
-    
-    // Вкладка "Коллекции"
+
     tabCollections = new QWidget();
     verticalLayoutCollections = new QVBoxLayout(tabCollections);
     verticalLayoutCollections->setContentsMargins(0, 0, 0, 0);

@@ -185,7 +185,7 @@ void MovieManager::addToFavorites(int movieId) {
 
     auto it = std::find(favoriteIds.begin(), favoriteIds.end(), movieId);
     if (it != favoriteIds.end()) {
-        // Находим фильм по ID, чтобы получить его название
+
         auto movieIt = std::find_if(movies.begin(), movies.end(),
                                    [movieId](const Movie& m) { return m.getId() == movieId; });
         if (movieIt != movies.end()) {
@@ -528,7 +528,7 @@ void MovieManager::addMovieToFile(const Movie& movie) {
     if (movie.getId() != 0) {
         for (const auto& m : movies) {
             if (m.getId() == movie.getId()) {
-                // Используем название и год найденного фильма, а не ID
+
                 throw DuplicateMovieException(m.getTitle(), m.getYear());
             }
         }
