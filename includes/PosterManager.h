@@ -8,6 +8,7 @@
 #include "movie.h"
 
 class QNetworkAccessManager;
+class QNetworkReply;
 
 class PosterManager : public QObject {
     Q_OBJECT
@@ -24,15 +25,16 @@ public:
     void setNetworkManager(QNetworkAccessManager* manager);
 
 private:
-    QNetworkAccessManager* networkManager;
+    QNetworkAccessManager* networkManager = nullptr;
     
     QStringList getSearchDirectories() const;
     QStringList getValidDirectories(const QStringList& searchDirs) const;
     QString normalizePath(const QString& path) const;
     
-    QString findPosterFile(int movieId, const QString& posterPath = "");
-    QString findPosterFileByTitle(const QString& movieTitle);
-    void loadImageToLabel(QLabel* label, const QString& filePath);
+    QString findPosterFile(int movieId, const QString& posterPath = "") const;
+    QString findPosterFileByTitle(const QString& movieTitle) const;
+    void loadImageToLabel(QLabel* label, const QString& filePath) const;
+    void onPosterDownloadFinished(QNetworkReply* reply, const QString& savePath, const std::function<void(bool)>& callback);
 };
 
 #endif // BETA2_POSTERMANAGER_H

@@ -31,7 +31,7 @@ public:
     void removeFromFavorites(int movieId);
     void showFavorites() const;
     void showAllMovies() const;
-    void sortByRating();
+    void sortByRating() const;
     void showTopRated(int count = 10) const;
     void getMovieDetails(int id) const;
 

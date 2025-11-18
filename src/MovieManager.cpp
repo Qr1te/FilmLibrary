@@ -79,7 +79,7 @@ void MovieManager::showAllMovies() const {
     }
 }
 
-void MovieManager::sortByRating() {
+void MovieManager::sortByRating() const {
     if (const auto& movies = movieService->getAllMovies(); movies.empty()) {
         throw MovieException("No movies to sort");
     }

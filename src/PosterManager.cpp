@@ -12,7 +12,7 @@
 #include <QDebug>
 
 PosterManager::PosterManager(QObject* parent)
-    : QObject(parent), networkManager(nullptr) {
+    : QObject(parent) {
 }
 
 PosterManager::~PosterManager() = default;
@@ -78,7 +78,7 @@ QString PosterManager::normalizePath(const QString& path) const {
     return QDir::cleanPath(fullPath);
 }
 
-QString PosterManager::findPosterFile(int movieId, const QString& posterPath) {
+QString PosterManager::findPosterFile(int movieId, const QString& posterPath) const {
     QString appDir = QApplication::applicationDirPath();
     QString currentDir = QDir::currentPath();
     QString sep = QDir::separator();
@@ -148,7 +148,7 @@ QString PosterManager::findPosterFile(int movieId, const QString& posterPath) {
     return "";
 }
 
-QString PosterManager::findPosterFileByTitle(const QString& movieTitle) {
+QString PosterManager::findPosterFileByTitle(const QString& movieTitle) const {
     QStringList searchDirs = getSearchDirectories();
     
     if (QStringList validDirs = getValidDirectories(searchDirs); !validDirs.isEmpty()) {
@@ -174,7 +174,7 @@ QString PosterManager::findPosterFileByTitle(const QString& movieTitle) {
     return "";
 }
 
-void PosterManager::loadImageToLabel(QLabel* label, const QString& filePath) {
+void PosterManager::loadImageToLabel(QLabel* label, const QString& filePath) const {
     if (!label || filePath.isEmpty()) return;
     
     QString absolutePath = QFileInfo(filePath).absoluteFilePath();
@@ -273,90 +273,90 @@ void PosterManager::downloadPoster(const QString& posterUrl, const QString& save
     
     QNetworkReply* reply = networkManager->get(request);
     
-    connect(reply, &QNetworkReply::finished, [reply, savePath, callback]() {
-        bool success = false;
+    connect(reply, &QNetworkReply::finished, [this, reply, savePath, callback]() {
+        onPosterDownloadFinished(reply, savePath, callback);
+    });
+}
+
+void PosterManager::onPosterDownloadFinished(QNetworkReply* reply, const QString& savePath, const std::function<void(bool)>& callback) {
+    bool success = false;
+    
+    if (reply->error() == QNetworkReply::NoError) {
+        QByteArray imageData = reply->readAll();
         
-        if (reply->error() == QNetworkReply::NoError) {
-            QByteArray imageData = reply->readAll();
+        if (!imageData.isEmpty()) {
+            QString imageFormat = "JPEG";
+            QString fileExtension = "jpg";
+            if (imageData.startsWith("\xFF\xD8\xFF")) {
+                imageFormat = "JPEG";
+                fileExtension = "jpg";
+            } else if (imageData.startsWith("\x89PNG")) {
+                imageFormat = "PNG";
+                fileExtension = "png";
+            } else if (imageData.startsWith("GIF")) {
+                imageFormat = "GIF";
+                fileExtension = "gif";
+            } else if (imageData.startsWith("BM")) {
+                imageFormat = "BMP";
+                fileExtension = "bmp";
+            }
             
-            if (!imageData.isEmpty()) {
-                QString imageFormat = "JPEG";
-                QString fileExtension = "jpg";
-                if (imageData.startsWith("\xFF\xD8\xFF")) {
-                    imageFormat = "JPEG";
-                    fileExtension = "jpg";
-                } else if (imageData.startsWith("\x89PNG")) {
-                    imageFormat = "PNG";
-                    fileExtension = "png";
-                } else if (imageData.startsWith("GIF")) {
-                    imageFormat = "GIF";
-                    fileExtension = "gif";
-                } else if (imageData.startsWith("BM")) {
-                    imageFormat = "BMP";
-                    fileExtension = "bmp";
-                }
-                
-                QImage image;
-                if (!image.loadFromData(imageData)) {
-                    if (!image.loadFromData(imageData, imageFormat.toUtf8().constData())) {
-                        QStringList formats = {"JPEG", "JPG", "PNG", "GIF", "BMP"};
-                        bool loaded = false;
-                        for (const QString& fmt : formats) {
-                            if (image.loadFromData(imageData, fmt.toUtf8().constData())) {
-                                imageFormat = fmt;
-                                loaded = true;
-                                break;
-                            }
-                        }
+            QImage image;
+            if (!image.loadFromData(imageData) && !image.loadFromData(imageData, imageFormat.toUtf8().constData())) {
+                QStringList formats = {"JPEG", "JPG", "PNG", "GIF", "BMP"};
+                bool loaded = false;
+                for (const QString& fmt : formats) {
+                    if (image.loadFromData(imageData, fmt.toUtf8().constData())) {
+                        imageFormat = fmt;
+                        loaded = true;
+                        break;
                     }
                 }
+            }
+            
+            QFileInfo pathInfo(savePath);
+            QString sep = QDir::separator();
+            QString correctPath = pathInfo.path() + sep + pathInfo.baseName() + "." + fileExtension;
+            
+            if (QFile file(correctPath); file.open(QIODevice::WriteOnly)) {
+                qint64 bytesWritten = file.write(imageData);
+                file.close();
                 
-                QFileInfo pathInfo(savePath);
-                QString sep = QDir::separator();
-                QString correctPath = pathInfo.path() + sep + pathInfo.baseName() + "." + fileExtension;
-                
-                if (QFile file(correctPath); file.open(QIODevice::WriteOnly)) {
-                    qint64 bytesWritten = file.write(imageData);
-                    file.close();
+                if (bytesWritten > 0 && bytesWritten == imageData.size()) {
+                    file.flush();
+                    QThread::msleep(50);
                     
-                    if (bytesWritten > 0 && bytesWritten == imageData.size()) {
-                        file.flush();
-                        QThread::msleep(50);
-                        
-                        QImage testImage;
-                        if (testImage.load(correctPath)) {
-                            success = true;
-                        } else {
-                            if (QFile::exists(correctPath) && QFileInfo(correctPath).size() > 0) {
-                                success = true;
-                            }
-                        }
+                    QImage testImage;
+                    if (testImage.load(correctPath)) {
+                        success = true;
+                    } else if (QFile::exists(correctPath) && QFileInfo(correctPath).size() > 0) {
+                        success = true;
                     }
                 }
-                
-                if (!success && !image.isNull()) {
-                    QFile file2(correctPath);
-                    if (file2.open(QIODevice::WriteOnly)) {
-                        QString saveFormat = imageFormat;
-                        if (saveFormat == "JPG") {
-                            saveFormat = "JPEG";
-                        }
-                        if (image.save(&file2, saveFormat.toUtf8().constData())) {
-                            file2.close();
-                            success = true;
-                        } else {
-                            file2.close();
-                        }
+            }
+            
+            if (!success && !image.isNull()) {
+                QFile file2(correctPath);
+                if (file2.open(QIODevice::WriteOnly)) {
+                    QString saveFormat = imageFormat;
+                    if (saveFormat == "JPG") {
+                        saveFormat = "JPEG";
+                    }
+                    if (image.save(&file2, saveFormat.toUtf8().constData())) {
+                        file2.close();
+                        success = true;
+                    } else {
+                        file2.close();
                     }
                 }
             }
         }
-        
-        reply->deleteLater();
-        
-        if (callback) {
-            callback(success);
-        }
-    });
+    }
+    
+    reply->deleteLater();
+    
+    if (callback) {
+        callback(success);
+    }
 }
 
