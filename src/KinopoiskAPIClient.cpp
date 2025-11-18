@@ -47,7 +47,7 @@ void KinopoiskAPIClient::searchMovie(const QString& title,
     request.setRawHeader("Accept", "application/json");
     request.setRawHeader("X-API-KEY", apiKey.toUtf8());
     
-    QNetworkReply* reply = networkManager->get(request);
+    auto* reply = networkManager->get(request);
     connect(reply, &QNetworkReply::finished, this, &KinopoiskAPIClient::onSearchFinished);
 }
 
@@ -116,7 +116,7 @@ void KinopoiskAPIClient::fetchMovieDetails(int movieId) {
     detailRequest.setRawHeader("Accept", "application/json");
     detailRequest.setRawHeader("X-API-KEY", apiKey.toUtf8());
     
-    QNetworkReply* detailReply = networkManager->get(detailRequest);
+    auto* detailReply = networkManager->get(detailRequest);
     connect(detailReply, &QNetworkReply::finished, this, &KinopoiskAPIClient::onDetailFinished);
 }
 
@@ -232,7 +232,7 @@ void KinopoiskAPIClient::onDetailFinished() {
     }
 }
 
-void KinopoiskAPIClient::handleError(QNetworkReply* reply, const QString& defaultMessage) {
+void KinopoiskAPIClient::handleError(const QNetworkReply* reply, const QString& defaultMessage) {
     QString errorMsg = defaultMessage;
     QString errorString = reply->errorString();
     int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();

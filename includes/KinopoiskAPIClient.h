@@ -38,7 +38,7 @@ private:
     QJsonObject searchResultJson;
     
     void fetchMovieDetails(int movieId);
-    void handleError(QNetworkReply* reply, const QString& defaultMessage);
+    void handleError(const QNetworkReply* reply, const QString& defaultMessage);
 };
 
 #endif // BETA2_KINOPOISKAPICLIENT_H
