@@ -10,7 +10,7 @@ private:
 
 public:
     explicit MovieException(const std::string& msg);
-    virtual const char* what() const noexcept override;
+    const char* what() const noexcept override;
 };
 
 #endif

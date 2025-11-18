@@ -80,8 +80,7 @@ void MovieManager::showAllMovies() const {
 }
 
 void MovieManager::sortByRating() {
-    const auto& movies = movieService->getAllMovies();
-    if (movies.empty()) {
+    if (const auto& movies = movieService->getAllMovies(); movies.empty()) {
         throw MovieException("No movies to sort");
     }
     // Сортировка происходит в памяти, но не сохраняется
@@ -194,8 +193,9 @@ void MovieManager::removeMovie(int movieId) {
     if (favoriteService->isFavorite(movieId)) {
         try {
             favoriteService->removeFavorite(movieId);
-        } catch (const MovieNotFoundException&) {
+        } catch (const MovieNotFoundException& e) {
             // Фильм уже не в избранном, это нормально
+            (void)e; // Подавляем предупреждение о неиспользуемой переменной
         }
     }
     
@@ -226,7 +226,7 @@ CollectionManager* MovieManager::getCollectionManager() {
         auto names = collectionService->getAllCollectionNames();
         for (const auto& name : names) {
             try {
-                MovieCollection* coll = collectionService->getCollection(name);
+                const MovieCollection* coll = const_cast<const CollectionService*>(collectionService.get())->getCollection(name);
                 if (coll) {
                     // Создаем коллекцию в адаптере
                     adapter->createCollection(name);

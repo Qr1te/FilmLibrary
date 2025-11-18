@@ -6,8 +6,7 @@ int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
     
     QString appDir = QApplication::applicationDirPath();
-    QString imageFormatsPath = appDir + "/plugins/imageformats";
-    if (QDir(imageFormatsPath).exists()) {
+    if (QString imageFormatsPath = appDir + "/plugins/imageformats"; QDir(imageFormatsPath).exists()) {
         QApplication::addLibraryPath(appDir);
     }
     
