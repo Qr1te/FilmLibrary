@@ -15,7 +15,7 @@ MovieCollection::MovieCollection(const std::string& name, const std::vector<Movi
 
     std::string safeName = name;
     std::ranges::replace(safeName, ' ', '_');
-    std::transform(safeName.begin(), safeName.end(), safeName.begin(), ::tolower);
+    std::ranges::transform(safeName, safeName.begin(), ::tolower);
     filename = "collections/" + safeName + ".txt";
     
     try {

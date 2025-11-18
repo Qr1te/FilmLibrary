@@ -46,7 +46,7 @@ std::vector<std::string> CollectionRepository::getAllCollectionNames() const {
 void CollectionRepository::deleteCollection(const std::string& name) const {
     std::string safeName = name;
     std::ranges::replace(safeName, ' ', '_');
-    std::transform(safeName.begin(), safeName.end(), safeName.begin(), ::tolower);
+    std::ranges::transform(safeName, safeName.begin(), ::tolower);
     std::string filename = collectionsDirectory + safeName + ".txt";
     
     if (std::filesystem::exists(filename)) {
@@ -57,7 +57,7 @@ void CollectionRepository::deleteCollection(const std::string& name) const {
 bool CollectionRepository::collectionExists(const std::string& name) const {
     std::string safeName = name;
     std::ranges::replace(safeName, ' ', '_');
-    std::transform(safeName.begin(), safeName.end(), safeName.begin(), ::tolower);
+    std::ranges::transform(safeName, safeName.begin(), ::tolower);
     std::string filename = collectionsDirectory + safeName + ".txt";
     
     return std::filesystem::exists(filename);

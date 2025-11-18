@@ -1,5 +1,6 @@
 #include "../../includes/services/MovieService.h"
 #include <algorithm>
+#include <ranges>
 #include <cctype>
 
 MovieService::MovieService(const std::string& moviesFile)
@@ -29,12 +30,12 @@ std::vector<Movie> MovieService::searchByTitle(const std::string& title) const {
     }
     
     std::string searchTitle = title;
-    std::transform(searchTitle.begin(), searchTitle.end(), searchTitle.begin(), ::tolower);
+    std::ranges::transform(searchTitle, searchTitle.begin(), ::tolower);
     
     std::vector<Movie> results;
     for (const auto& movie : movies) {
         std::string movieTitle = movie.getTitle();
-        std::transform(movieTitle.begin(), movieTitle.end(), movieTitle.begin(), ::tolower);
+        std::ranges::transform(movieTitle, movieTitle.begin(), ::tolower);
         if (movieTitle.find(searchTitle) != std::string::npos) {
             results.push_back(movie);
         }
@@ -49,7 +50,7 @@ std::vector<Movie> MovieService::searchByGenre(const std::string& genre) const {
     }
     
     std::string searchGenre = genre;
-    std::transform(searchGenre.begin(), searchGenre.end(), searchGenre.begin(), ::tolower);
+    std::ranges::transform(searchGenre, searchGenre.begin(), ::tolower);
     
     std::vector<Movie> results;
     for (const auto& movie : movies) {
