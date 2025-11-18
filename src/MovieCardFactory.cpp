@@ -21,23 +21,23 @@ MovieCardFactory::MovieCardFactory(MovieManager* manager, PosterManager* posterM
     : movieManager(manager), posterManager(posterManager), statusBar(statusBar) {
 }
 
-void MovieCardFactory::setOnFavoritesChanged(std::function<void()> callback) {
+void MovieCardFactory::setOnFavoritesChanged(const std::function<void()>& callback) {
     onFavoritesChanged = callback;
 }
 
-void MovieCardFactory::setOnCollectionsChanged(std::function<void()> callback) {
+void MovieCardFactory::setOnCollectionsChanged(const std::function<void()>& callback) {
     onCollectionsChanged = callback;
 }
 
-void MovieCardFactory::setOnMoviesChanged(std::function<void()> callback) {
+void MovieCardFactory::setOnMoviesChanged(const std::function<void()>& callback) {
     onMoviesChanged = callback;
 }
 
-void MovieCardFactory::setOnGenresChanged(std::function<void()> callback) {
+void MovieCardFactory::setOnGenresChanged(const std::function<void()>& callback) {
     onGenresChanged = callback;
 }
 
-void MovieCardFactory::setOnShowInfo(std::function<void(const Movie&)> callback) {
+void MovieCardFactory::setOnShowInfo(const std::function<void(const Movie&)>& callback) {
     onShowInfo = callback;
 }
 

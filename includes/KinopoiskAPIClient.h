@@ -18,8 +18,8 @@ public:
     ~KinopoiskAPIClient() override;
 
     void searchMovie(const QString& title, 
-                     std::function<void(const Movie&, const QString&)> onSuccess,
-                     std::function<void(const QString&)> onError);
+                     const std::function<void(const Movie&, const QString&)>& onSuccess,
+                     const std::function<void(const QString&)>& onError);
     
     void setApiKey(const QString& apiKey);
     QString getApiKey() const;

@@ -19,7 +19,7 @@ public:
     void loadPosterToLabel(QLabel* label, const Movie& movie);
     void loadPosterToLabelByTitle(QLabel* label, const QString& movieTitle);
     void downloadPoster(const QString& posterUrl, const QString& savePath, 
-                       std::function<void(bool)> callback);
+                       const std::function<void(bool)>& callback);
     
     void setNetworkManager(QNetworkAccessManager* manager);
 

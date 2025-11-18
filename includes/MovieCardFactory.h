@@ -15,11 +15,11 @@ public:
     
     QWidget* createMovieCard(const Movie& movie, QWidget* parent = nullptr);
     
-    void setOnFavoritesChanged(std::function<void()> callback);
-    void setOnCollectionsChanged(std::function<void()> callback);
-    void setOnMoviesChanged(std::function<void()> callback);
-    void setOnGenresChanged(std::function<void()> callback);
-    void setOnShowInfo(std::function<void(const Movie&)> callback);
+    void setOnFavoritesChanged(const std::function<void()>& callback);
+    void setOnCollectionsChanged(const std::function<void()>& callback);
+    void setOnMoviesChanged(const std::function<void()>& callback);
+    void setOnGenresChanged(const std::function<void()>& callback);
+    void setOnShowInfo(const std::function<void(const Movie&)>& callback);
 
 private:
     MovieManager* movieManager;

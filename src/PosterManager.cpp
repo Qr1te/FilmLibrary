@@ -295,7 +295,7 @@ void PosterManager::loadPosterToLabelByTitle(QLabel* label, const QString& movie
 }
 
 void PosterManager::downloadPoster(const QString& posterUrl, const QString& savePath, 
-                                   std::function<void(bool)> callback) {
+                                   const std::function<void(bool)>& callback) {
     if (!networkManager) {
         if (callback) callback(false);
         return;

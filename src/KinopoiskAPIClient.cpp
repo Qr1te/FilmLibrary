@@ -25,8 +25,8 @@ QString KinopoiskAPIClient::getApiKey() const {
 }
 
 void KinopoiskAPIClient::searchMovie(const QString& title,
-                                     std::function<void(const Movie&, const QString&)> onSuccess,
-                                     std::function<void(const QString&)> onError) {
+                                     const std::function<void(const Movie&, const QString&)>& onSuccess,
+                                     const std::function<void(const QString&)>& onError) {
     if (title.isEmpty()) {
         if (onError) onError("Название фильма не может быть пустым");
         return;
