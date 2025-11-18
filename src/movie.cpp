@@ -82,8 +82,8 @@ void Movie::setId(int id) {
     this->id = id;
 }
 
-void Movie::setTitle(const std::string& title) {
-    this->title = title;
+void Movie::setTitle(std::string_view title) {
+    this->title = std::string(title);
 }
 
 void Movie::setRating(double rating) {
@@ -98,24 +98,24 @@ void Movie::setGenres(const std::vector<std::string>& genres) {
     this->genres = genres;
 }
 
-void Movie::setDirector(const std::string& director) {
-    this->director = director;
+void Movie::setDirector(std::string_view director) {
+    this->director = std::string(director);
 }
 
-void Movie::setDescription(const std::string& description) {
-    this->description = description;
+void Movie::setDescription(std::string_view description) {
+    this->description = std::string(description);
 }
 
-void Movie::setPosterPath(const std::string& path) {
-    this->posterPath = path;
+void Movie::setPosterPath(std::string_view path) {
+    this->posterPath = std::string(path);
 }
 
-void Movie::setCountry(const std::string& country) {
-    this->country = country;
+void Movie::setCountry(std::string_view country) {
+    this->country = std::string(country);
 }
 
-void Movie::setActors(const std::string& actors) {
-    this->actors = actors;
+void Movie::setActors(std::string_view actors) {
+    this->actors = std::string(actors);
 }
 
 void Movie::setDuration(int duration) {

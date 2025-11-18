@@ -49,16 +49,16 @@ public:
     int getDuration() const;
 
     void setId(int id);
-    void setTitle(const std::string& title);
+    void setTitle(std::string_view title);
     void setRating(double rating);
     void setYear(int year);
     void setGenres(const std::vector<std::string>& genres);
     void addGenre(std::string_view genre);
-    void setDirector(const std::string& director);
-    void setDescription(const std::string& description);
-    void setPosterPath(const std::string& path);
-    void setCountry(const std::string& country);
-    void setActors(const std::string& actors);
+    void setDirector(std::string_view director);
+    void setDescription(std::string_view description);
+    void setPosterPath(std::string_view path);
+    void setCountry(std::string_view country);
+    void setActors(std::string_view actors);
     void setDuration(int duration);
 
     void print() const;
