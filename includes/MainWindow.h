@@ -58,6 +58,9 @@ private:
     int selectedMovieIdFromAll() const;
     int selectedMovieIdFromFavorites() const;
     void showMovieInfo(const Movie& movie);
+    void clearGridLayout(QGridLayout* layout);
+    void populateGridLayoutWithMovies(QGridLayout* layout, QWidget* parent, const std::vector<Movie>& movies);
+    std::string qStringToStdString(const QString& str) const;
 
 private:
 

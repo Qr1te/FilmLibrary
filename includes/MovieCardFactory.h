@@ -22,6 +22,9 @@ public:
     void setOnShowInfo(const std::function<void(const Movie&)>& callback);
 
 private:
+    void handleCollectionException(const std::exception& e) const;
+    std::string qStringToStdString(const QString& str) const;
+    
     MovieManager* movieManager;
     PosterManager* posterManager;
     QStatusBar* statusBar;

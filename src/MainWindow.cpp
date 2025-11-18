@@ -379,65 +379,50 @@ void MainWindow::showMovieInfo(const Movie& movie) {
         delete dialog;
 }
 
-void MainWindow::populateAllMovies(const std::vector<Movie>& movies) {
-    if (!gridLayoutMovies) {
+void MainWindow::clearGridLayout(QGridLayout* layout) {
+    if (!layout) {
         return;
     }
-    
     QLayoutItem* item;
-    while ((item = gridLayoutMovies->takeAt(0)) != nullptr) {
+    while ((item = layout->takeAt(0)) != nullptr) {
         if (item->widget()) {
             item->widget()->deleteLater();
         }
         delete item;
     }
+}
 
+void MainWindow::populateGridLayoutWithMovies(QGridLayout* layout, QWidget* parent, const std::vector<Movie>& movies) {
+    if (!layout || !parent) {
+        return;
+    }
+    
+    clearGridLayout(layout);
+    
     const int columns = 4;
     int row = 0, col = 0;
     
     for (const auto& movie : movies) {
-        QWidget* card = cardFactory->createMovieCard(movie, scrollAreaWidgetContentsAll);
+        QWidget* card = cardFactory->createMovieCard(movie, parent);
         if (card) {
-            gridLayoutMovies->addWidget(card, row, col);
+            layout->addWidget(card, row, col);
             
             col++;
             if (col >= columns) {
                 col = 0;
-        row++;
+                row++;
             }
         }
     }
 }
 
-void MainWindow::populateFavorites() {
-    if (!gridLayoutFavorites) {
-        return;
-    }
-    
-    auto favs = manager.getFavoriteMovies();
-    QLayoutItem* item;
-    while ((item = gridLayoutFavorites->takeAt(0)) != nullptr) {
-        if (item->widget()) {
-            item->widget()->deleteLater();
-        }
-        delete item;
-    }
+void MainWindow::populateAllMovies(const std::vector<Movie>& movies) {
+    populateGridLayoutWithMovies(gridLayoutMovies, scrollAreaWidgetContentsAll, movies);
+}
 
-    const int columns = 4;
-    int row = 0, col = 0;
-    
-    for (const auto& movie : favs) {
-        QWidget* card = cardFactory->createMovieCard(movie, scrollAreaWidgetContentsFavorites);
-        if (card) {
-            gridLayoutFavorites->addWidget(card, row, col);
-            
-            col++;
-            if (col >= columns) {
-                col = 0;
-        row++;
-            }
-        }
-    }
+void MainWindow::populateFavorites() {
+    auto favs = manager.getFavoriteMovies();
+    populateGridLayoutWithMovies(gridLayoutFavorites, scrollAreaWidgetContentsFavorites, favs);
 }
 
 void MainWindow::populateCollections() {
@@ -451,16 +436,13 @@ void MainWindow::populateCollections() {
     if (collectionComboBox->count() > 0) {
         handleCollectionChanged();
     } else {
-        if (gridLayoutCollections) {
-            QLayoutItem* item;
-            while ((item = gridLayoutCollections->takeAt(0)) != nullptr) {
-                if (item->widget()) {
-                    item->widget()->deleteLater();
-                }
-                delete item;
-            }
-        }
+        clearGridLayout(gridLayoutCollections);
     }
+}
+
+std::string MainWindow::qStringToStdString(const QString& str) const {
+    QByteArray utf8 = str.toUtf8();
+    return std::string(utf8.constData(), utf8.length());
 }
 
 void MainWindow::handleCollectionChanged() {
@@ -469,13 +451,7 @@ void MainWindow::handleCollectionChanged() {
     }
     QString collectionName = collectionComboBox->currentText();
     if (collectionName.isEmpty()) {
-        QLayoutItem* item;
-        while ((item = gridLayoutCollections->takeAt(0)) != nullptr) {
-            if (item->widget()) {
-                item->widget()->deleteLater();
-            }
-            delete item;
-        }
+        clearGridLayout(gridLayoutCollections);
         return;
     }
     
@@ -484,37 +460,13 @@ void MainWindow::handleCollectionChanged() {
         return;
     }
     
-    QByteArray utf8Name = collectionName.toUtf8();
-    MovieCollection* collection = collManager->getCollection(std::string(utf8Name.constData(), utf8Name.length()));
+    MovieCollection* collection = collManager->getCollection(qStringToStdString(collectionName));
     if (!collection) {
         return;
     }
     
     auto movies = collection->getMovies();
-    
-    QLayoutItem* item;
-    while ((item = gridLayoutCollections->takeAt(0)) != nullptr) {
-        if (item->widget()) {
-            item->widget()->deleteLater();
-        }
-        delete item;
-    }
-
-    const int columns = 4;
-    int row = 0, col = 0;
-    
-    for (const auto& movie : movies) {
-        QWidget* card = cardFactory->createMovieCard(movie, scrollAreaWidgetContentsCollections);
-        if (card) {
-            gridLayoutCollections->addWidget(card, row, col);
-            
-            col++;
-            if (col >= columns) {
-                col = 0;
-                row++;
-            }
-        }
-    }
+    populateGridLayoutWithMovies(gridLayoutCollections, scrollAreaWidgetContentsCollections, movies);
 }
 
 void MainWindow::handleSearch() {
@@ -820,8 +772,7 @@ void MainWindow::handleCreateCollection() {
     }
 
     try {
-        QByteArray utf8Name = name.toUtf8();
-        MovieCollection* collection = manager.createCollection(std::string(utf8Name.constData(), utf8Name.length()));
+        MovieCollection* collection = manager.createCollection(qStringToStdString(name));
         QMessageBox::information(this, "Success",
                                  QString("Collection '%1' created successfully!").arg(name));
         statusbar->showMessage(QString("Collection '%1' created").arg(name), 3000);
@@ -870,8 +821,7 @@ void MainWindow::handleDeleteCollection() {
                                     QMessageBox::Yes | QMessageBox::No);
     if (ret == QMessageBox::Yes) {
         try {
-            QByteArray utf8Selected = selected.toUtf8();
-            collManager->deleteCollection(std::string(utf8Selected.constData(), utf8Selected.length()));
+            collManager->deleteCollection(qStringToStdString(selected));
             QMessageBox::information(this, "Успех",
                                      QString("Коллекция '%1' удалена").arg(selected));
             statusbar->showMessage("Коллекция удалена", 2000);

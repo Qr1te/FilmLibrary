@@ -24,6 +24,15 @@ MovieCardFactory::MovieCardFactory(MovieManager* manager, PosterManager* posterM
     : movieManager(manager), posterManager(posterManager), statusBar(statusBar) {
 }
 
+void MovieCardFactory::handleCollectionException(const std::exception& e) const {
+    QMessageBox::warning(nullptr, "Ошибка", e.what());
+}
+
+std::string MovieCardFactory::qStringToStdString(const QString& str) const {
+    QByteArray utf8 = str.toUtf8();
+    return std::string(utf8.constData(), utf8.length());
+}
+
 void MovieCardFactory::setOnFavoritesChanged(const std::function<void()>& callback) {
     onFavoritesChanged = callback;
 }
@@ -222,8 +231,7 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
                                                         "Выберите коллекцию:", items, 0, false, &ok);
                 if (ok && !selected.isEmpty()) {
                     if (collManager) {
-                        QByteArray utf8Selected = selected.toUtf8();
-                        MovieCollection* collection = collManager->getCollection(std::string(utf8Selected.constData(), utf8Selected.length()));
+                        MovieCollection* collection = collManager->getCollection(qStringToStdString(selected));
                         if (collection) {
                             try {
                                 collection->addMovie(movie);
@@ -231,11 +239,11 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
                                     QString("Фильм добавлен в коллекцию '%1'").arg(selected));
                                 if (onCollectionsChanged) onCollectionsChanged();
                             } catch (const DuplicateFavoriteException& e) {
-                                QMessageBox::warning(nullptr, "Ошибка", e.what());
+                                handleCollectionException(e);
                             } catch (const MovieNotFoundException& e) {
-                                QMessageBox::warning(nullptr, "Ошибка", e.what());
+                                handleCollectionException(e);
                             } catch (const MovieException& e) {
-                                QMessageBox::warning(nullptr, "Ошибка", e.what());
+                                handleCollectionException(e);
                             }
                         }
                     }
@@ -245,7 +253,7 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
             if (collectionsWithMovie.size() == 1) {
                 QString collectionName = collectionsWithMovie.first();
                 if (collManager) {
-                    MovieCollection* collection = collManager->getCollection(collectionName.toStdString());
+                    MovieCollection* collection = collManager->getCollection(qStringToStdString(collectionName));
                     if (collection) {
                         try {
                             collection->removeMovie(movie.getId());
@@ -253,9 +261,9 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
                                 QString("Фильм удален из коллекции '%1'").arg(collectionName));
                             if (onCollectionsChanged) onCollectionsChanged();
                         } catch (const MovieNotFoundException& e) {
-                            QMessageBox::warning(nullptr, "Ошибка", e.what());
+                            handleCollectionException(e);
                         } catch (const MovieException& e) {
-                            QMessageBox::warning(nullptr, "Ошибка", e.what());
+                            handleCollectionException(e);
                         }
                     }
                 }
@@ -266,8 +274,7 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
                                                         collectionsWithMovie, 0, false, &ok);
                 if (ok && !selected.isEmpty()) {
                     if (collManager) {
-                        QByteArray utf8Selected = selected.toUtf8();
-                        MovieCollection* collection = collManager->getCollection(std::string(utf8Selected.constData(), utf8Selected.length()));
+                        MovieCollection* collection = collManager->getCollection(qStringToStdString(selected));
                         if (collection) {
                             try {
                                 collection->removeMovie(movie.getId());
@@ -275,11 +282,11 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
                                     QString("Фильм удален из коллекции '%1'").arg(selected));
                                 if (onCollectionsChanged) onCollectionsChanged();
                             } catch (const DuplicateFavoriteException& e) {
-                                QMessageBox::warning(nullptr, "Ошибка", e.what());
+                                handleCollectionException(e);
                             } catch (const MovieNotFoundException& e) {
-                                QMessageBox::warning(nullptr, "Ошибка", e.what());
+                                handleCollectionException(e);
                             } catch (const MovieException& e) {
-                                QMessageBox::warning(nullptr, "Ошибка", e.what());
+                                handleCollectionException(e);
                             }
                         }
                     }
