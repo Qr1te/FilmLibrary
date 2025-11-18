@@ -43,8 +43,7 @@ void FavoriteRepository::saveAll(const std::vector<int>& favoriteIds) const {
 }
 
 void FavoriteRepository::addFavorite(int movieId, std::vector<int>& favoriteIds) const {
-    auto it = std::ranges::find(favoriteIds, movieId);
-    if (it != favoriteIds.end()) {
+    if (auto it = std::ranges::find(favoriteIds, movieId); it != favoriteIds.end()) {
         throw DuplicateFavoriteException("Фильм с ID " + std::to_string(movieId));
     }
 

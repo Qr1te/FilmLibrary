@@ -20,13 +20,13 @@ void CollectionService::reload() {
 }
 
 void CollectionService::saveAll() {
-    for (auto& pair : collections) {
+    for (const auto& pair : collections) {
         repository.saveCollection(*pair.second);
     }
 }
 
 MovieCollection* CollectionService::createCollection(const std::string& name) {
-    if (collections.find(name) != collections.end()) {
+    if (collections.contains(name)) {
         throw DuplicateCollectionException(name);
     }
     

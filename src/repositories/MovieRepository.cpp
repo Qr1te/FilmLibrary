@@ -3,6 +3,7 @@
 #include <fstream>
 #include <algorithm>
 #include <ranges>
+#include <memory>
 #include <stdexcept>
 #include <iostream>
 
@@ -144,7 +145,7 @@ const Movie* MovieRepository::findById(int id, const std::vector<Movie>& movies)
     if (it == movies.end()) {
         return nullptr;
     }
-    return &(*it);
+    return std::to_address(it);
 }
 
 bool MovieRepository::exists(int id, const std::vector<Movie>& movies) const {

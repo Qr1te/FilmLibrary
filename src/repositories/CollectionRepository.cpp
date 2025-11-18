@@ -21,7 +21,7 @@ void CollectionRepository::saveCollection(const MovieCollection& collection) con
     collection.save();
 }
 
-void CollectionRepository::loadCollection(const std::string& name, MovieCollection& collection) const {
+void CollectionRepository::loadCollection(std::string_view name, MovieCollection& collection) const {
     collection.load();
 }
 

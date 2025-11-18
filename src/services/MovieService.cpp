@@ -72,7 +72,7 @@ std::vector<Movie> MovieService::topRated(int count) const {
     }
     
     std::vector<Movie> sortedMovies = movies;
-    std::sort(sortedMovies.begin(), sortedMovies.end(),
+    std::ranges::sort(sortedMovies,
               [](const Movie& a, const Movie& b) { return a.getRating() > b.getRating(); });
     
     if (count < static_cast<int>(sortedMovies.size())) {
