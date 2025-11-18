@@ -11,7 +11,7 @@
 #include <QMessageBox>
 
 KinopoiskAPIClient::KinopoiskAPIClient(QObject* parent)
-    : QObject(parent), networkManager(new QNetworkAccessManager(this)), apiKey("E42W0MH-8HDMQ8D-JDZ6HG2-X3RCZHZ") {
+    : QObject(parent), networkManager(new QNetworkAccessManager(this)) {
 }
 
 KinopoiskAPIClient::~KinopoiskAPIClient() = default;
@@ -47,7 +47,7 @@ void KinopoiskAPIClient::searchMovie(const QString& title,
     request.setRawHeader("Accept", "application/json");
     request.setRawHeader("X-API-KEY", apiKey.toUtf8());
     
-    const QNetworkReply* reply = const_cast<const QNetworkReply*>(networkManager->get(request));
+    auto reply = const_cast<const QNetworkReply*>(networkManager->get(request));
     connect(const_cast<QNetworkReply*>(reply), &QNetworkReply::finished, this, &KinopoiskAPIClient::onSearchFinished);
 }
 
@@ -116,11 +116,11 @@ void KinopoiskAPIClient::fetchMovieDetails(int movieId) {
     detailRequest.setRawHeader("Accept", "application/json");
     detailRequest.setRawHeader("X-API-KEY", apiKey.toUtf8());
     
-    const QNetworkReply* detailReply = const_cast<const QNetworkReply*>(networkManager->get(detailRequest));
+    auto detailReply = const_cast<const QNetworkReply*>(networkManager->get(detailRequest));
     connect(const_cast<QNetworkReply*>(detailReply), &QNetworkReply::finished, this, &KinopoiskAPIClient::onDetailFinished);
 }
 
-void KinopoiskAPIClient::onDetailFinished() {
+void KinopoiskAPIClient::onDetailFinished() const {
     QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
     if (!reply) return;
     
@@ -232,7 +232,7 @@ void KinopoiskAPIClient::onDetailFinished() {
     }
 }
 
-void KinopoiskAPIClient::handleError(const QNetworkReply* reply, const QString& defaultMessage) {
+void KinopoiskAPIClient::handleError(const QNetworkReply* reply, const QString& defaultMessage) const {
     QString errorMsg = defaultMessage;
     QString errorString = reply->errorString();
     int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();

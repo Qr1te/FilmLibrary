@@ -26,19 +26,19 @@ public:
 
 private slots:
     void onSearchFinished();
-    void onDetailFinished();
+    void onDetailFinished() const;
 
 private:
     QNetworkAccessManager* networkManager;
-    QString apiKey;
+    QString apiKey = "E42W0MH-8HDMQ8D-JDZ6HG2-X3RCZHZ";
     
-    std::function<void(const Movie&, const QString&)> successCallback;
-    std::function<void(const QString&)> errorCallback;
+    mutable std::function<void(const Movie&, const QString&)> successCallback;
+    mutable std::function<void(const QString&)> errorCallback;
     QString currentTitle;
-    QJsonObject searchResultJson;
+    mutable QJsonObject searchResultJson;
     
     void fetchMovieDetails(int movieId);
-    void handleError(const QNetworkReply* reply, const QString& defaultMessage);
+    void handleError(const QNetworkReply* reply, const QString& defaultMessage) const;
 };
 
 #endif // BETA2_KINOPOISKAPICLIENT_H
