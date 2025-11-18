@@ -1,10 +1,12 @@
 #ifndef BETA2_MOVIEMANAGER_H
 #define BETA2_MOVIEMANAGER_H
 
-
 #include "movie.h"
 #include "exceptions/exceptions.h"
 #include "MovieCollection.h"
+#include "services/MovieService.h"
+#include "services/FavoriteService.h"
+#include "services/CollectionService.h"
 #include <vector>
 #include <string>
 #include <memory>
@@ -12,16 +14,11 @@
 
 class MovieManager {
 private:
-    std::vector<Movie> movies;
-    std::vector<int> favoriteIds;
+    std::unique_ptr<MovieService> movieService;
+    std::unique_ptr<FavoriteService> favoriteService;
+    std::unique_ptr<CollectionService> collectionService;
     std::string moviesFile;
     std::string favoritesFile;
-    std::unique_ptr<CollectionManager> collectionManager;
-
-    void loadMovies();
-    void loadFavorites();
-    void saveFavorites();
-    void validateMovieId(int id) const;
 
 public:
     MovieManager(std::string  moviesFile = "movies.txt",
@@ -61,7 +58,11 @@ public:
     void addMovieToFile(const Movie& movie);
     void saveMovies();
     void removeMovie(int movieId);
+    
+    // Новые методы для доступа к сервисам
+    MovieService* getMovieService();
+    FavoriteService* getFavoriteService();
+    CollectionService* getCollectionService();
 };
-
 
 #endif

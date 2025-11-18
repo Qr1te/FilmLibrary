@@ -8,6 +8,7 @@
 #include <QString>
 #include <functional>
 #include "movie.h"
+#include "parsers/MovieJsonParser.h"
 
 class KinopoiskAPIClient : public QObject {
     Q_OBJECT
@@ -37,8 +38,6 @@ private:
     QJsonObject searchResultJson;
     
     void fetchMovieDetails(int movieId);
-    Movie parseMovieFromJSON(const QJsonObject& json);
-    QString extractPosterUrl(const QJsonObject& movieJson);
     void handleError(QNetworkReply* reply, const QString& defaultMessage);
 };
 

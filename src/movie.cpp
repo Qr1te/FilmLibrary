@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <ranges>
 #include <cctype>
 
 static std::string trim(const std::string& str) {
@@ -120,7 +121,7 @@ void Movie::setDuration(int duration) {
 }
 
 void Movie::addGenre(const std::string& genre) {
-    if (!genre.empty() && std::find(genres.begin(), genres.end(), genre) == genres.end()) {
+    if (!genre.empty() && std::ranges::find(genres, genre) == genres.end()) {
         genres.push_back(genre);
     }
 }

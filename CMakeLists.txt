@@ -37,6 +37,20 @@ add_executable(beta2 src/main.cpp
         src/exceptions/EmptyCollectionException.cpp
         includes/exceptions/EmptyCollectionException.h
         includes/exceptions/exceptions.h
+        src/repositories/MovieRepository.cpp
+        includes/repositories/MovieRepository.h
+        src/repositories/FavoriteRepository.cpp
+        includes/repositories/FavoriteRepository.h
+        src/repositories/CollectionRepository.cpp
+        includes/repositories/CollectionRepository.h
+        src/services/MovieService.cpp
+        includes/services/MovieService.h
+        src/services/FavoriteService.cpp
+        includes/services/FavoriteService.h
+        src/services/CollectionService.cpp
+        includes/services/CollectionService.h
+        src/parsers/MovieJsonParser.cpp
+        includes/parsers/MovieJsonParser.h
         src/MovieManager.cpp
         includes/MovieManager.h
         src/MovieCollection.cpp

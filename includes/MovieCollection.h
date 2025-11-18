@@ -8,6 +8,7 @@
 #include <memory>
 #include <fstream>
 #include <algorithm>
+#include <ranges>
 #include <set>
 #include <map>
 
@@ -72,7 +73,7 @@ public:
     }
     
     void remove(int id) {
-        auto it = std::find_if(movies.begin(), movies.end(),
+        auto it = std::ranges::find_if(movies,
                               [id](const Movie& m) { return m.getId() == id; });
         if (it != movies.end()) {
             movies.erase(it);
@@ -80,12 +81,12 @@ public:
     }
     
     typename Container::iterator findMovie(int id) {
-        return std::find_if(movies.begin(), movies.end(),
+        return std::ranges::find_if(movies,
                            [id](const Movie& m) { return m.getId() == id; });
     }
     
     typename Container::const_iterator findMovie(int id) const {
-        return std::find_if(movies.begin(), movies.end(),
+        return std::ranges::find_if(movies,
                            [id](const Movie& m) { return m.getId() == id; });
     }
     

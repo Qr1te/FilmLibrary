@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <ranges>
 #include <cctype>
 
 
@@ -40,7 +41,7 @@ void MovieCollection::validateMovieId(int id) const {
         throw MovieException("Movie reference not set");
     }
     
-    auto it = std::find_if(allMoviesRef->begin(), allMoviesRef->end(),
+    auto it = std::ranges::find_if(*allMoviesRef,
                           [id](const Movie& m) { return m.getId() == id; });
     if (it == allMoviesRef->end()) {
         throw MovieNotFoundException(id);
@@ -61,7 +62,7 @@ void MovieCollection::addMovie(const Movie& movie) {
 }
 
 void MovieCollection::removeMovie(int movieId) {
-    auto it = std::find(movieIds.begin(), movieIds.end(), movieId);
+    auto it = std::ranges::find(movieIds, movieId);
     if (it == movieIds.end()) {
         throw MovieNotFoundException(movieId);
     }
@@ -71,7 +72,7 @@ void MovieCollection::removeMovie(int movieId) {
 }
 
 bool MovieCollection::containsMovie(int movieId) const {
-    return std::find(movieIds.begin(), movieIds.end(), movieId) != movieIds.end();
+    return std::ranges::find(movieIds, movieId) != movieIds.end();
 }
 
 size_t MovieCollection::size() const {
@@ -86,7 +87,7 @@ std::vector<Movie> MovieCollection::getMovies() const {
     }
     
     for (int id : movieIds) {
-        auto it = std::find_if(allMoviesRef->begin(), allMoviesRef->end(),
+        auto it = std::ranges::find_if(*allMoviesRef,
                               [id](const Movie& m) { return m.getId() == id; });
         if (it != allMoviesRef->end()) {
             result.push_back(*it);
