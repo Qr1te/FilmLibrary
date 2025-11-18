@@ -3,6 +3,7 @@
 
 
 #include <string>
+#include <string_view>
 #include <vector>
 #include <ostream>
 #include <istream>
@@ -51,7 +52,7 @@ public:
     void setRating(double rating);
     void setYear(int year);
     void setGenres(const std::vector<std::string>& genres);
-    void addGenre(const std::string& genre);
+    void addGenre(std::string_view genre);
     void setDirector(const std::string& director);
     void setDescription(const std::string& description);
     void setPosterPath(const std::string& path);
@@ -62,7 +63,7 @@ public:
     void print() const;
     std::string toString() const;
     static Movie fromString(const std::string& data);
-    bool hasGenre(const std::string& genre) const;
+    bool hasGenre(std::string_view genre) const;
 
     bool operator==(const Movie& other) const;
     bool operator!=(const Movie& other) const;

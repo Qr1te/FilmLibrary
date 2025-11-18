@@ -6,12 +6,13 @@
 #include <ranges>
 #include <cctype>
 #include <stdexcept>
+#include <string_view>
 
-static std::string trim(const std::string& str) {
+static std::string trim(std::string_view str) {
     size_t first = str.find_first_not_of(" \t\n\r");
-    if (first == std::string::npos) return "";
+    if (first == std::string_view::npos) return "";
     size_t last = str.find_last_not_of(" \t\n\r");
-    return str.substr(first, (last - first + 1));
+    return std::string(str.substr(first, (last - first + 1)));
 }
 
 Movie::Movie(int id, const std::string& title, double rating, int year,
@@ -121,9 +122,9 @@ void Movie::setDuration(int duration) {
     this->duration = duration;
 }
 
-void Movie::addGenre(const std::string& genre) {
-    if (!genre.empty() && std::ranges::find(genres, genre) == genres.end()) {
-        genres.push_back(genre);
+void Movie::addGenre(std::string_view genre) {
+    if (!genre.empty() && std::ranges::find(genres, std::string(genre)) == genres.end()) {
+        genres.push_back(std::string(genre));
     }
 }
 
@@ -139,14 +140,14 @@ std::string Movie::getGenreString() const {
     return oss.str();
 }
 
-bool Movie::hasGenre(const std::string& genre) const {
+bool Movie::hasGenre(std::string_view genre) const {
     if (genre.empty()) return false;
-    std::string lowerGenre = genre;
-    std::transform(lowerGenre.begin(), lowerGenre.end(), lowerGenre.begin(), ::tolower);
+    std::string lowerGenre(genre);
+    std::ranges::transform(lowerGenre, lowerGenre.begin(), ::tolower);
     
     for (const auto& g : genres) {
         std::string lowerG = g;
-        std::transform(lowerG.begin(), lowerG.end(), lowerG.begin(), ::tolower);
+        std::ranges::transform(lowerG, lowerG.begin(), ::tolower);
         if (lowerG == lowerGenre) {
             return true;
         }
@@ -249,8 +250,7 @@ Movie Movie::fromString(const std::string& data) {
         }
         
         std::vector<std::string> genres;
-        std::string genreStr = tokens.size() > 4 ? tokens[4] : "";
-        if (!genreStr.empty()) {
+        if (std::string genreStr = tokens.size() > 4 ? tokens[4] : ""; !genreStr.empty()) {
             std::istringstream genreStream(genreStr);
             std::string genre;
             if (genreStr.find(';') != std::string::npos) {
@@ -315,8 +315,7 @@ std::ostream& operator<<(std::ostream& os, const Movie& movie) {
 }
 
 std::istream& operator>>(std::istream& is, Movie& movie) {
-    std::string line;
-    if (std::getline(is, line)) {
+    if (std::string line; std::getline(is, line)) {
         movie = Movie::fromString(line);
     }
     return is;
