@@ -150,7 +150,9 @@ void MovieCollection::load() {
         return;
     }
     
+    // Skip first line if it exists (collection name)
     if (std::string line; std::getline(file, line)) {
+        // Line read and discarded
     }
     
     int id;
@@ -221,7 +223,7 @@ void CollectionManager::deleteCollection(const std::string& name) {
     }
     
     try {
-        std::string filename = it->second->getFilename();
+        std::filesystem::path filename = it->second->getFilename();
         if (std::filesystem::exists(filename)) {
             std::filesystem::remove(filename);
         }
@@ -234,21 +236,21 @@ void CollectionManager::deleteCollection(const std::string& name) {
 
 std::vector<std::string> CollectionManager::getAllCollectionNames() const {
     std::vector<std::string> names;
-    for (const auto& pair : collections) {
-        names.push_back(pair.first);
+    for (const auto& [name, collection] : collections) {
+        names.push_back(name);
     }
     std::ranges::sort(names);
     return names;
 }
 
 void CollectionManager::saveAll() const {
-    for (const auto& pair : collections) {
+    for (const auto& [name, collection] : collections) {
         try {
-            pair.second->save();
+            collection->save();
         } catch (const FileNotFoundException& e) {
-            std::cerr << "Warning: Failed to save collection '" << pair.first << "': " << e.what() << std::endl;
+            std::cerr << "Warning: Failed to save collection '" << name << "': " << e.what() << std::endl;
         } catch (const MovieException& e) {
-            std::cerr << "Warning: Error saving collection '" << pair.first << "': " << e.what() << std::endl;
+            std::cerr << "Warning: Error saving collection '" << name << "': " << e.what() << std::endl;
         }
     }
 }
@@ -299,8 +301,8 @@ void CollectionManager::loadAll() {
 
 void CollectionManager::updateAllMoviesRef(const std::vector<Movie>* movies) {
     allMoviesRef = movies;
-    for (auto& pair : collections) {
-        pair.second->setAllMoviesRef(movies);
+    for (auto& [name, collection] : collections) {
+        collection->setAllMoviesRef(movies);
     }
 }
 

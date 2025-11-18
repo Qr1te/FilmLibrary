@@ -230,7 +230,7 @@ void MovieCardFactory::handleMoreButtonClicked(const Movie& movie, QPushButton* 
     auto selectedAction = const_cast<const QAction*>(menu.exec(moreBtn->mapToGlobal(QPoint(0, moreBtn->height()))));
     
     if (selectedAction == addToCollectionAction) {
-        handleAddToCollection(movie, moreBtn);
+        handleAddToCollection(movie);
     } else if (selectedAction == removeFromCollectionAction) {
         handleRemoveFromCollection(movie, collectionsWithMovie);
     } else if (selectedAction == deleteMovieAction) {
@@ -238,7 +238,7 @@ void MovieCardFactory::handleMoreButtonClicked(const Movie& movie, QPushButton* 
     }
 }
 
-void MovieCardFactory::handleAddToCollection(const Movie& movie, QPushButton* moreBtn) {
+void MovieCardFactory::handleAddToCollection(const Movie& movie) {
     auto collections = movieManager->getAllCollectionNames();
     if (collections.empty()) {
         QMessageBox::information(nullptr, "Коллекции", "Сначала создайте коллекцию через меню.");
