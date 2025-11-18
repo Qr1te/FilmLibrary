@@ -26,6 +26,10 @@ public:
 private:
     QNetworkAccessManager* networkManager;
     
+    QStringList getSearchDirectories() const;
+    QStringList getValidDirectories(const QStringList& searchDirs) const;
+    QString normalizePath(const QString& path) const;
+    
     QString findPosterFile(int movieId, const QString& posterPath = "");
     QString findPosterFileByTitle(const QString& movieTitle);
     void loadImageToLabel(QLabel* label, const QString& filePath);

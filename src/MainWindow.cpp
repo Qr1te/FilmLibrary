@@ -271,7 +271,7 @@ void MainWindow::populateGenres() {
     for (const auto& m : manager.getAllMovies()) {
         const auto& movieGenres = m.getGenres();
         for (const auto& genre : movieGenres) {
-            genres.insert(QString::fromStdString(genre));
+            genres.insert(stdStringToQString(genre));
         }
     }
     QStringList sorted = QStringList(genres.begin(), genres.end());
@@ -306,7 +306,7 @@ void MainWindow::showMovieInfo(const Movie& movie) {
         auto* infoLayout = new QVBoxLayout();
         infoLayout->setSpacing(10);
         
-        auto* titleLabel = new QLabel(QString::fromStdString(movie.getTitle()));
+        auto* titleLabel = new QLabel(stdStringToQString(movie.getTitle()));
         titleLabel->setStyleSheet("font-size: 20pt; font-weight: bold; color: #ff6b35;");
         titleLabel->setWordWrap(true);
         infoLayout->addWidget(titleLabel);
@@ -319,12 +319,12 @@ void MainWindow::showMovieInfo(const Movie& movie) {
         yearLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
         infoLayout->addWidget(yearLabel);
         
-    auto* genreLabel = new QLabel(QString("Жанр: %1").arg(QString::fromStdString(movie.getGenreString())));
+    auto* genreLabel = new QLabel(QString("Жанр: %1").arg(stdStringToQString(movie.getGenreString())));
         genreLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
         genreLabel->setWordWrap(true);
         infoLayout->addWidget(genreLabel);
         
-    QString directorText = QString::fromStdString(movie.getDirector());
+    QString directorText = stdStringToQString(movie.getDirector());
     if (directorText.isEmpty()) {
         directorText = "Не указано";
     }
@@ -333,7 +333,7 @@ void MainWindow::showMovieInfo(const Movie& movie) {
         directorLabel->setWordWrap(true);
         infoLayout->addWidget(directorLabel);
         
-    QString countryText = QString::fromStdString(movie.getCountry());
+    QString countryText = stdStringToQString(movie.getCountry());
     if (countryText.isEmpty()) {
         countryText = "Не указано";
     }
@@ -342,7 +342,7 @@ void MainWindow::showMovieInfo(const Movie& movie) {
         countryLabel->setWordWrap(true);
         infoLayout->addWidget(countryLabel);
         
-    QString actorsText = QString::fromStdString(movie.getActors());
+    QString actorsText = stdStringToQString(movie.getActors());
     if (actorsText.isEmpty()) {
         actorsText = "Не указано";
     }
@@ -361,7 +361,7 @@ void MainWindow::showMovieInfo(const Movie& movie) {
         infoLayout->addWidget(descTitleLabel);
         
         auto* descriptionText = new QTextEdit();
-        descriptionText->setPlainText(QString::fromStdString(movie.getDescription()));
+        descriptionText->setPlainText(stdStringToQString(movie.getDescription()));
         descriptionText->setReadOnly(true);
         descriptionText->setMaximumHeight(150);
         infoLayout->addWidget(descriptionText);
@@ -443,6 +443,53 @@ void MainWindow::populateCollections() {
 std::string MainWindow::qStringToStdString(const QString& str) const {
     QByteArray utf8 = str.toUtf8();
     return std::string(utf8.constData(), utf8.length());
+}
+
+QString MainWindow::stdStringToQString(const std::string& str) const {
+    return QString::fromStdString(str);
+}
+
+QString MainWindow::findPosterDirectory() const {
+    QString appDir = QApplication::applicationDirPath();
+    QString currentDir = QDir::currentPath();
+    QString sep = QDir::separator();
+    
+    QStringList possiblePosterDirs;
+    possiblePosterDirs << appDir + sep + "posters";
+    possiblePosterDirs << appDir + sep + ".." + sep + "posters";
+    possiblePosterDirs << currentDir + sep + "posters";
+    possiblePosterDirs << currentDir + sep + ".." + sep + "posters";
+    possiblePosterDirs << "posters";
+    
+    for (const QString& dir : possiblePosterDirs) {
+        QDir testDir(dir);
+        if (testDir.exists()) {
+            return testDir.absolutePath();
+        }
+    }
+    
+    QString posterDir = currentDir + sep + "posters";
+    QDir().mkpath(posterDir);
+    return posterDir;
+}
+
+void MainWindow::handleAddMovieToFile(const Movie& movie) {
+    try {
+        manager.addMovieToFile(movie);
+        manager.reloadMovies();
+        populateAllMovies(manager.getAllMovies());
+        populateFavorites();
+        populateGenres();
+        statusbar->showMessage("Фильм добавлен в фильмотеку!", 3000);
+        QMessageBox::information(this, "Успех", "Фильм успешно добавлен в фильмотеку!");
+    } catch (const DuplicateMovieException& e) {
+        QMessageBox::warning(this, "Дубликат фильма", stdStringToQString(e.what()));
+        statusbar->showMessage("Фильм уже существует в фильмотеке", 3000);
+    } catch (const FileNotFoundException& e) {
+        QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
+    } catch (const MovieException& e) {
+        QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
+    }
 }
 
 void MainWindow::handleCollectionChanged() {
@@ -572,16 +619,16 @@ void MainWindow::handleAddMovie() {
         }
 
         QString infoText = QString("Фильм найден:\n\n") +
-                           QString("Название: %1\n").arg(QString::fromStdString(movie.getTitle())) +
+                           QString("Название: %1\n").arg(stdStringToQString(movie.getTitle())) +
                            QString("Год: %1\n").arg(movie.getYear()) +
                            QString("Рейтинг: %1\n").arg(movie.getRating());
 
-        QString director = QString::fromStdString(movie.getDirector());
+        QString director = stdStringToQString(movie.getDirector());
         if (!director.isEmpty()) {
             infoText += QString("Режиссер: %1\n").arg(director);
         }
 
-        QString actors = QString::fromStdString(movie.getActors());
+        QString actors = stdStringToQString(movie.getActors());
         if (!actors.isEmpty()) {
             infoText += QString("Актеры: %1\n").arg(actors);
         }
@@ -592,33 +639,8 @@ void MainWindow::handleAddMovie() {
                                         QMessageBox::Yes | QMessageBox::No);
 
         if (ret == QMessageBox::Yes) {
-            QString appDir = QApplication::applicationDirPath();
-            QString currentDir = QDir::currentPath();
+            QString posterDir = findPosterDirectory();
             QString sep = QDir::separator();
-
-            QString posterDir;
-            bool foundDir = false;
-            QStringList possiblePosterDirs;
-            possiblePosterDirs << appDir + sep + "posters";
-            possiblePosterDirs << appDir + sep + ".." + sep + "posters";
-            possiblePosterDirs << currentDir + sep + "posters";
-            possiblePosterDirs << currentDir + sep + ".." + sep + "posters";
-            possiblePosterDirs << "posters";
-
-            for (const QString& dir : possiblePosterDirs) {
-                QDir testDir(dir);
-                if (testDir.exists()) {
-                    posterDir = testDir.absolutePath();
-                    foundDir = true;
-                    break;
-                }
-            }
-
-            if (!foundDir) {
-                posterDir = currentDir + sep + "posters";
-                QDir().mkpath(posterDir);
-            }
-
             QString posterFileName = QString::number(movie.getId()) + ".jpg";
             QString savePath = posterDir + sep + posterFileName;
 
@@ -658,40 +680,10 @@ void MainWindow::handleAddMovie() {
                         movieToAdd.setPosterPath(relativePath.toStdString());
                     }
 
-                    try {
-                        manager.addMovieToFile(movieToAdd);
-                        manager.reloadMovies();
-                        populateAllMovies(manager.getAllMovies());
-                        populateFavorites();
-                        populateGenres();
-                        statusbar->showMessage("Фильм добавлен в фильмотеку!", 3000);
-                        QMessageBox::information(this, "Успех", "Фильм успешно добавлен в фильмотеку!");
-                    } catch (const DuplicateMovieException& e) {
-                        QMessageBox::warning(this, "Дубликат фильма", QString::fromStdString(e.what()));
-                        statusbar->showMessage("Фильм уже существует в фильмотеке", 3000);
-                    } catch (const FileNotFoundException& e) {
-                        QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
-                    } catch (const MovieException& e) {
-                        QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
-                    }
+                    handleAddMovieToFile(movieToAdd);
                 });
             } else {
-                try {
-                    manager.addMovieToFile(movie);
-                    manager.reloadMovies();
-                    populateAllMovies(manager.getAllMovies());
-                    populateFavorites();
-                    populateGenres();
-                    statusbar->showMessage("Фильм добавлен в фильмотеку!", 3000);
-                    QMessageBox::information(this, "Успех", "Фильм успешно добавлен в фильмотеку!");
-                } catch (const DuplicateMovieException& e) {
-                    QMessageBox::warning(this, "Дубликат фильма", QString::fromStdString(e.what()));
-                    statusbar->showMessage("Фильм уже существует в фильмотеке", 3000);
-                } catch (const FileNotFoundException& e) {
-                    QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
-                } catch (const MovieException& e) {
-                    QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
-                }
+                handleAddMovieToFile(movie);
             }
         }
     },

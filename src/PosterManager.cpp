@@ -21,15 +21,10 @@ void PosterManager::setNetworkManager(QNetworkAccessManager* manager) {
     networkManager = manager;
 }
 
-QString PosterManager::findPosterFile(int movieId, const QString& posterPath) {
+QStringList PosterManager::getSearchDirectories() const {
     QString appDir = QApplication::applicationDirPath();
     QString currentDir = QDir::currentPath();
     QString sep = QDir::separator();
-    
-    QString fileName = QFileInfo(posterPath).fileName();
-    if (fileName.isEmpty() || !fileName.contains(QString::number(movieId))) {
-        fileName = QString::number(movieId) + ".jpg";
-    }
     
     QStringList searchDirs;
     auto addDir = [&searchDirs](const QString& path) {
@@ -49,6 +44,10 @@ QString PosterManager::findPosterFile(int movieId, const QString& posterPath) {
     addDir(".." + sep + ".." + sep + "posters");
     addDir(appDir);
     
+    return searchDirs;
+}
+
+QStringList PosterManager::getValidDirectories(const QStringList& searchDirs) const {
     QStringList validDirs;
     for (const QString& dir : searchDirs) {
         QDir testDir(dir);
@@ -59,6 +58,38 @@ QString PosterManager::findPosterFile(int movieId, const QString& posterPath) {
             }
         }
     }
+    return validDirs;
+}
+
+QString PosterManager::normalizePath(const QString& path) const {
+    QString currentDir = QDir::currentPath();
+    QString appDir = QApplication::applicationDirPath();
+    
+    QString fullPath = path;
+    if (!QDir::isAbsolutePath(fullPath)) {
+        QString testPath1 = QDir(currentDir).absoluteFilePath(fullPath);
+        QString testPath2 = QDir(appDir).absoluteFilePath(fullPath);
+        if (QFile::exists(testPath1)) {
+            fullPath = testPath1;
+        } else if (QFile::exists(testPath2)) {
+            fullPath = testPath2;
+        }
+    }
+    return QDir::cleanPath(fullPath);
+}
+
+QString PosterManager::findPosterFile(int movieId, const QString& posterPath) {
+    QString appDir = QApplication::applicationDirPath();
+    QString currentDir = QDir::currentPath();
+    QString sep = QDir::separator();
+    
+    QString fileName = QFileInfo(posterPath).fileName();
+    if (fileName.isEmpty() || !fileName.contains(QString::number(movieId))) {
+        fileName = QString::number(movieId) + ".jpg";
+    }
+    
+    QStringList searchDirs = getSearchDirectories();
+    QStringList validDirs = getValidDirectories(searchDirs);
     
     QStringList possiblePaths;
     
@@ -118,38 +149,8 @@ QString PosterManager::findPosterFile(int movieId, const QString& posterPath) {
 }
 
 QString PosterManager::findPosterFileByTitle(const QString& movieTitle) {
-    QString appDir = QApplication::applicationDirPath();
-    QString currentDir = QDir::currentPath();
-    QString sep = QDir::separator();
-    
-    QStringList searchDirs;
-    auto addDir = [&searchDirs](const QString& path) {
-        QString normalized = QDir::cleanPath(path);
-        if (!normalized.isEmpty() && !searchDirs.contains(normalized)) {
-            searchDirs << normalized;
-        }
-    };
-    
-    addDir(appDir + sep + "posters");
-    addDir(appDir + sep + ".." + sep + "posters");
-    addDir(appDir + sep + ".." + sep + ".." + sep + "posters");
-    addDir(currentDir + sep + "posters");
-    addDir(currentDir + sep + ".." + sep + "posters");
-    addDir("posters");
-    addDir(".." + sep + "posters");
-    addDir(".." + sep + ".." + sep + "posters");
-    addDir(appDir);
-    
-    QStringList validDirs;
-    for (const QString& dir : searchDirs) {
-        QDir testDir(dir);
-        if (testDir.exists()) {
-            QString absPath = testDir.absolutePath();
-            if (!validDirs.contains(absPath)) {
-                validDirs << absPath;
-            }
-        }
-    }
+    QStringList searchDirs = getSearchDirectories();
+    QStringList validDirs = getValidDirectories(searchDirs);
     
     if (!validDirs.isEmpty()) {
         for (const QString& dir : validDirs) {
@@ -219,19 +220,7 @@ void PosterManager::loadPosterToLabel(QLabel* label, const Movie& movie) {
     QString fullPath = findPosterFile(movieId, posterPath);
     
     if (!fullPath.isEmpty()) {
-        QString currentDir = QDir::currentPath();
-        QString appDir = QApplication::applicationDirPath();
-        
-        if (!QDir::isAbsolutePath(fullPath)) {
-            QString testPath1 = QDir(currentDir).absoluteFilePath(fullPath);
-            QString testPath2 = QDir(appDir).absoluteFilePath(fullPath);
-            if (QFile::exists(testPath1)) {
-                fullPath = testPath1;
-            } else if (QFile::exists(testPath2)) {
-                fullPath = testPath2;
-            }
-        }
-        fullPath = QDir::cleanPath(fullPath);
+        fullPath = normalizePath(fullPath);
         
         if (QFile::exists(fullPath)) {
             loadImageToLabel(label, fullPath);
@@ -250,41 +239,11 @@ void PosterManager::loadPosterToLabelByTitle(QLabel* label, const QString& movie
     QString fullPath = findPosterFileByTitle(movieTitle);
     
     if (!fullPath.isEmpty()) {
-        QString currentDir = QDir::currentPath();
-        QString appDir = QApplication::applicationDirPath();
-        
-        if (!QDir::isAbsolutePath(fullPath)) {
-            QString testPath1 = QDir(currentDir).absoluteFilePath(fullPath);
-            QString testPath2 = QDir(appDir).absoluteFilePath(fullPath);
-            if (QFile::exists(testPath1)) {
-                fullPath = testPath1;
-            } else if (QFile::exists(testPath2)) {
-                fullPath = testPath2;
-            }
-        }
-        fullPath = QDir::cleanPath(fullPath);
+        fullPath = normalizePath(fullPath);
         
         if (QFile::exists(fullPath)) {
-            QImageReader reader(QFileInfo(fullPath).absoluteFilePath());
-            QImage image;
-            
-            if (reader.canRead()) {
-                reader.setAutoTransform(true);
-                image = reader.read();
-            }
-            
-            if (image.isNull()) {
-                image = QImage(fullPath);
-            }
-            
-            if (!image.isNull()) {
-                QPixmap pixmap = QPixmap::fromImage(image);
-                pixmap = pixmap.scaled(300, 360, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                label->setPixmap(pixmap);
-                label->setAlignment(Qt::AlignCenter);
-                label->setStyleSheet("border-radius: 4px;");
-                return;
-            }
+            loadImageToLabel(label, fullPath);
+            return;
         }
     }
     

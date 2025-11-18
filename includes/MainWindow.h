@@ -61,6 +61,9 @@ private:
     void clearGridLayout(QGridLayout* layout);
     void populateGridLayoutWithMovies(QGridLayout* layout, QWidget* parent, const std::vector<Movie>& movies);
     std::string qStringToStdString(const QString& str) const;
+    QString stdStringToQString(const std::string& str) const;
+    QString findPosterDirectory() const;
+    void handleAddMovieToFile(const Movie& movie);
 
 private:
 
