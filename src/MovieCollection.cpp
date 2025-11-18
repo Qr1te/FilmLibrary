@@ -29,14 +29,14 @@ MovieCollection::MovieCollection(const std::string& name, const std::vector<Movi
     }
 }
 
-void MovieCollection::validateCollectionName(const std::string& name) const {
+void MovieCollection::validateCollectionName(std::string_view name) const {
     if (name.empty()) {
         throw InvalidInputException("Collection name cannot be empty");
     }
     
-    std::string invalidChars = "<>:\"|?*\\/";
+    std::string invalidChars = R"(<>:"|?*\/)";
     for (char c : invalidChars) {
-        if (name.find(c) != std::string::npos) {
+        if (name.find(c) != std::string_view::npos) {
             throw InvalidInputException("Collection name contains invalid characters");
         }
     }
@@ -150,8 +150,7 @@ void MovieCollection::load() {
         return;
     }
     
-    std::string line;
-    if (std::getline(file, line)) {
+    if (std::string line; std::getline(file, line)) {
     }
     
     int id;
@@ -160,7 +159,7 @@ void MovieCollection::load() {
             break;
         }
         if (allMoviesRef) {
-            bool exists = std::any_of(allMoviesRef->begin(), allMoviesRef->end(),
+            bool exists = std::ranges::any_of(*allMoviesRef,
                                      [id](const Movie& m) { return m.getId() == id; });
             if (exists) {
                 movieIds.push_back(id);
@@ -186,7 +185,7 @@ CollectionManager::CollectionManager(const std::vector<Movie>* allMovies, const 
 }
 
 MovieCollection* CollectionManager::createCollection(const std::string& name) {
-    if (collections.find(name) != collections.end()) {
+    if (collections.contains(name)) {
         throw DuplicateCollectionException(name);
     }
     
@@ -238,7 +237,7 @@ std::vector<std::string> CollectionManager::getAllCollectionNames() const {
     for (const auto& pair : collections) {
         names.push_back(pair.first);
     }
-    std::sort(names.begin(), names.end());
+    std::ranges::sort(names);
     return names;
 }
 

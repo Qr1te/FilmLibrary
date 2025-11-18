@@ -36,7 +36,7 @@ private:
     const std::vector<Movie>* allMoviesRef;
     
     void validateMovieId(int id) const;
-    void validateCollectionName(const std::string& name) const;
+    void validateCollectionName(std::string_view name) const;
     
 public:
     MovieCollection(const std::string& name, const std::vector<Movie>* allMovies);
