@@ -67,7 +67,7 @@ public:
     bool hasGenre(std::string_view genre) const;
 
     bool operator==(const Movie& other) const;
-    std::strong_ordering operator<=>(const Movie& other) const;
+    std::partial_ordering operator<=>(const Movie& other) const;
     friend std::ostream& operator<<(std::ostream& os, const Movie& movie);
     friend std::istream& operator>>(std::istream& is, Movie& movie);
 };

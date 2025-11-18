@@ -297,7 +297,7 @@ bool Movie::operator==(const Movie& other) const {
     return id == other.id;
 }
 
-std::strong_ordering Movie::operator<=>(const Movie& other) const {
+std::partial_ordering Movie::operator<=>(const Movie& other) const {
     if (auto cmp = rating <=> other.rating; cmp != 0) {
         return cmp;
     }
