@@ -4,6 +4,7 @@
 #include "movie.h"
 #include "exceptions/exceptions.h"
 #include <string>
+#include <string_view>
 #include <vector>
 #include <memory>
 #include <fstream>
@@ -39,7 +40,7 @@ private:
     
 public:
     MovieCollection(const std::string& name, const std::vector<Movie>* allMovies);
-    virtual ~MovieCollection() = default;
+    ~MovieCollection() override = default;
     
     void addMovie(const Movie& movie) override;
     void removeMovie(int movieId) override;
@@ -99,7 +100,7 @@ public:
     typename Container::const_iterator end() const { return movies.end(); }
     
     std::string getName() const { return containerName; }
-    void setName(const std::string& name) { containerName = name; }
+    void setName(std::string_view name) { containerName = std::string(name); }
 };
 
 template<typename Iterator, typename Predicate>
@@ -109,9 +110,9 @@ std::vector<Movie> findMovies(Iterator begin, Iterator end, Predicate pred) {
     return results;
 }
 
-template<typename Container>
+template<std::ranges::random_access_range Container>
 void sortMoviesByRating(Container& movies) {
-    std::sort(movies.begin(), movies.end(),
+    std::ranges::sort(movies,
               [](const Movie& a, const Movie& b) {
                   return a.getRating() > b.getRating();
               });
