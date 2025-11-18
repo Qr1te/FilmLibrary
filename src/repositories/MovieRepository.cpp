@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <ranges>
 #include <stdexcept>
+#include <iostream>
 
 MovieRepository::MovieRepository(const std::string& moviesFile)
     : moviesFile(moviesFile) {
@@ -52,9 +53,11 @@ std::vector<Movie> MovieRepository::loadAll() const {
                 } else {
                     throw InvalidMovieDataException("Line " + std::to_string(lineNumber));
                 }
-            } catch (const InvalidMovieDataException&) {
+            } catch (const InvalidMovieDataException& e) {
+                std::cerr << "Warning: Invalid movie data on line " << lineNumber << ": " << e.what() << std::endl;
                 fullLine.clear();
-            } catch (const std::invalid_argument&) {
+            } catch (const std::invalid_argument& e) {
+                std::cerr << "Warning: Invalid argument on line " << lineNumber << ": " << e.what() << std::endl;
                 fullLine.clear();
             }
         }
@@ -70,10 +73,10 @@ std::vector<Movie> MovieRepository::loadAll() const {
                 }
                 movies.push_back(movie);
             }
-        } catch (const InvalidMovieDataException&) {
-            // Игнорируем некорректные данные
-        } catch (const std::invalid_argument&) {
-            // Игнорируем ошибки парсинга
+        } catch (const InvalidMovieDataException& e) {
+            std::cerr << "Warning: Failed to parse movie data: " << e.what() << std::endl;
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "Warning: Parsing error: " << e.what() << std::endl;
         }
     }
     

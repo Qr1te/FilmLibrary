@@ -3,13 +3,17 @@
 #include <fstream>
 #include <algorithm>
 #include <ranges>
+#include <iostream>
 
 CollectionRepository::CollectionRepository(const std::string& dir)
     : collectionsDirectory(dir) {
     try {
         std::filesystem::create_directories(collectionsDirectory);
-    } catch (const std::filesystem::filesystem_error&) {
-        // Игнорируем ошибки создания директории
+    } catch (const std::filesystem::filesystem_error& e) {
+        // Директория может уже существовать, это не критично
+        if (!std::filesystem::exists(collectionsDirectory)) {
+            std::cerr << "Warning: Failed to create collections directory: " << e.what() << std::endl;
+        }
     }
 }
 
@@ -36,8 +40,8 @@ std::vector<std::string> CollectionRepository::getAllCollectionNames() const {
                 names.push_back(filename);
             }
         }
-    } catch (const std::filesystem::filesystem_error&) {
-        // Игнорируем ошибки файловой системы
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Warning: Filesystem error while getting collection names: " << e.what() << std::endl;
     }
     
     return names;

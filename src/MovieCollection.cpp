@@ -6,6 +6,7 @@
 #include <ranges>
 #include <cctype>
 #include <stdexcept>
+#include <iostream>
 
 
 MovieCollection::MovieCollection(const std::string& name, const std::vector<Movie>* allMovies)
@@ -20,8 +21,11 @@ MovieCollection::MovieCollection(const std::string& name, const std::vector<Movi
     
     try {
         std::filesystem::create_directories("collections");
-    } catch (const std::filesystem::filesystem_error&) {
-        // Игнорируем ошибки создания директории
+    } catch (const std::filesystem::filesystem_error& e) {
+        // Директория может уже существовать, это не критично
+        if (!std::filesystem::exists("collections")) {
+            std::cerr << "Warning: Failed to create collections directory: " << e.what() << std::endl;
+        }
     }
 }
 
@@ -172,8 +176,11 @@ CollectionManager::CollectionManager(const std::vector<Movie>* allMovies, const 
     : allMoviesRef(allMovies), collectionsDirectory(dir) {
     try {
         std::filesystem::create_directories(collectionsDirectory);
-    } catch (const std::filesystem::filesystem_error&) {
-        // Игнорируем ошибки создания директории
+    } catch (const std::filesystem::filesystem_error& e) {
+        // Директория может уже существовать, это не критично
+        if (!std::filesystem::exists(collectionsDirectory)) {
+            std::cerr << "Warning: Failed to create collections directory: " << e.what() << std::endl;
+        }
     }
     loadAll();
 }
@@ -219,8 +226,8 @@ void CollectionManager::deleteCollection(const std::string& name) {
         if (std::filesystem::exists(filename)) {
             std::filesystem::remove(filename);
         }
-    } catch (const std::filesystem::filesystem_error&) {
-        // Игнорируем ошибки удаления файла
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Warning: Failed to delete collection file: " << e.what() << std::endl;
     }
     
     collections.erase(it);
@@ -239,10 +246,10 @@ void CollectionManager::saveAll() const {
     for (const auto& pair : collections) {
         try {
             pair.second->save();
-        } catch (const FileNotFoundException&) {
-            // Игнорируем ошибки сохранения отдельных коллекций
-        } catch (const MovieException&) {
-            // Игнорируем ошибки сохранения отдельных коллекций
+        } catch (const FileNotFoundException& e) {
+            std::cerr << "Warning: Failed to save collection '" << pair.first << "': " << e.what() << std::endl;
+        } catch (const MovieException& e) {
+            std::cerr << "Warning: Error saving collection '" << pair.first << "': " << e.what() << std::endl;
         }
     }
 }
@@ -284,10 +291,10 @@ void CollectionManager::loadAll() {
                 }
             }
         }
-    } catch (const std::filesystem::filesystem_error&) {
-        // Игнорируем ошибки файловой системы при загрузке коллекций
-    } catch (const FileNotFoundException&) {
-        // Игнорируем отсутствующие файлы коллекций
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Warning: Filesystem error while loading collections: " << e.what() << std::endl;
+    } catch (const FileNotFoundException& e) {
+        std::cerr << "Warning: Collection file not found: " << e.what() << std::endl;
     }
 }
 

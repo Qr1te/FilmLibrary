@@ -195,7 +195,7 @@ void MovieManager::removeMovie(int movieId) {
         try {
             favoriteService->removeFavorite(movieId);
         } catch (const MovieNotFoundException&) {
-            // Игнорируем, если не найдено
+            // Фильм уже не в избранном, это нормально
         }
     }
     
@@ -239,10 +239,10 @@ CollectionManager* MovieManager::getCollectionManager() {
                         }
                     }
                 }
-            } catch (const CollectionNotFoundException&) {
-                // Игнорируем отсутствующие коллекции
-            } catch (const MovieException&) {
-                // Игнорируем ошибки коллекций
+            } catch (const CollectionNotFoundException& e) {
+                std::cerr << "Warning: Collection not found during adapter sync: " << e.what() << std::endl;
+            } catch (const MovieException& e) {
+                std::cerr << "Warning: Error syncing collection adapter: " << e.what() << std::endl;
             }
         }
     }
