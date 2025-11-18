@@ -1,6 +1,9 @@
 #include "../includes/MovieCardFactory.h"
 #include "../includes/MovieManager.h"
 #include "../includes/PosterManager.h"
+#include "../includes/exceptions/MovieNotFoundException.h"
+#include "../includes/exceptions/DuplicateFavoriteException.h"
+#include "../includes/exceptions/MovieException.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -169,7 +172,11 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
                 if (statusBar) statusBar->showMessage("Добавлено в избранное", 2000);
             }
             if (onFavoritesChanged) onFavoritesChanged();
-        } catch (const std::exception& e) {
+        } catch (const MovieNotFoundException& e) {
+            QMessageBox::warning(nullptr, "Ошибка", e.what());
+        } catch (const DuplicateFavoriteException& e) {
+            QMessageBox::warning(nullptr, "Ошибка", e.what());
+        } catch (const MovieException& e) {
             QMessageBox::warning(nullptr, "Ошибка", e.what());
         }
     });
@@ -223,7 +230,11 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
                                 QMessageBox::information(nullptr, "Успех", 
                                     QString("Фильм добавлен в коллекцию '%1'").arg(selected));
                                 if (onCollectionsChanged) onCollectionsChanged();
-                            } catch (const std::exception& e) {
+                            } catch (const DuplicateFavoriteException& e) {
+                                QMessageBox::warning(nullptr, "Ошибка", e.what());
+                            } catch (const MovieNotFoundException& e) {
+                                QMessageBox::warning(nullptr, "Ошибка", e.what());
+                            } catch (const MovieException& e) {
                                 QMessageBox::warning(nullptr, "Ошибка", e.what());
                             }
                         }
@@ -241,7 +252,9 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
                             QMessageBox::information(nullptr, "Успех", 
                                 QString("Фильм удален из коллекции '%1'").arg(collectionName));
                             if (onCollectionsChanged) onCollectionsChanged();
-                        } catch (const std::exception& e) {
+                        } catch (const MovieNotFoundException& e) {
+                            QMessageBox::warning(nullptr, "Ошибка", e.what());
+                        } catch (const MovieException& e) {
                             QMessageBox::warning(nullptr, "Ошибка", e.what());
                         }
                     }
@@ -261,7 +274,11 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
                                 QMessageBox::information(nullptr, "Успех", 
                                     QString("Фильм удален из коллекции '%1'").arg(selected));
                                 if (onCollectionsChanged) onCollectionsChanged();
-                            } catch (const std::exception& e) {
+                            } catch (const DuplicateFavoriteException& e) {
+                                QMessageBox::warning(nullptr, "Ошибка", e.what());
+                            } catch (const MovieNotFoundException& e) {
+                                QMessageBox::warning(nullptr, "Ошибка", e.what());
+                            } catch (const MovieException& e) {
                                 QMessageBox::warning(nullptr, "Ошибка", e.what());
                             }
                         }
@@ -288,7 +305,9 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
                         statusBar->showMessage(QString("Фильм '%1' успешно удален")
                                               .arg(QString::fromStdString(movie.getTitle())), 3000);
                     }
-                } catch (const std::exception& e) {
+                } catch (const MovieNotFoundException& e) {
+                    QMessageBox::warning(nullptr, "Ошибка", QString("Не удалось удалить фильм: %1").arg(e.what()));
+                } catch (const MovieException& e) {
                     QMessageBox::warning(nullptr, "Ошибка", QString("Не удалось удалить фильм: %1").arg(e.what()));
                 }
             }

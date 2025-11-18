@@ -194,7 +194,7 @@ void MovieManager::removeMovie(int movieId) {
     if (favoriteService->isFavorite(movieId)) {
         try {
             favoriteService->removeFavorite(movieId);
-        } catch (...) {
+        } catch (const MovieNotFoundException&) {
             // Игнорируем, если не найдено
         }
     }
@@ -239,7 +239,10 @@ CollectionManager* MovieManager::getCollectionManager() {
                         }
                     }
                 }
-            } catch (...) {
+            } catch (const CollectionNotFoundException&) {
+                // Игнорируем отсутствующие коллекции
+            } catch (const MovieException&) {
+                // Игнорируем ошибки коллекций
             }
         }
     }

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <ranges>
 #include <cctype>
+#include <stdexcept>
 
 static std::string trim(const std::string& str) {
     size_t first = str.find_first_not_of(" \t\n\r");
@@ -219,7 +220,9 @@ Movie Movie::fromString(const std::string& data) {
             if (!tokens[0].empty()) {
                 id = std::stoi(tokens[0]);
             }
-        } catch (...) {
+        } catch (const std::invalid_argument&) {
+            return Movie(0, "", 0.0, 0, std::vector<std::string>(), "", "", "", "", "", 0);
+        } catch (const std::out_of_range&) {
             return Movie(0, "", 0.0, 0, std::vector<std::string>(), "", "", "", "", "", 0);
         }
         
@@ -229,7 +232,9 @@ Movie Movie::fromString(const std::string& data) {
             if (tokens.size() > 2 && !tokens[2].empty()) {
                 rating = std::stod(tokens[2]);
             }
-        } catch (...) {
+        } catch (const std::invalid_argument&) {
+            rating = 0.0;
+        } catch (const std::out_of_range&) {
             rating = 0.0;
         }
         
@@ -237,7 +242,9 @@ Movie Movie::fromString(const std::string& data) {
             if (tokens.size() > 3 && !tokens[3].empty()) {
                 year = std::stoi(tokens[3]);
             }
-        } catch (...) {
+        } catch (const std::invalid_argument&) {
+            year = 0;
+        } catch (const std::out_of_range&) {
             year = 0;
         }
         
@@ -267,7 +274,9 @@ Movie Movie::fromString(const std::string& data) {
             if (!tokens[10].empty()) {
                 try {
                     duration = std::stoi(tokens[10]);
-                } catch (...) {
+                } catch (const std::invalid_argument&) {
+                    duration = 0;
+                } catch (const std::out_of_range&) {
                     duration = 0;
                 }
             } else {

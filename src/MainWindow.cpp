@@ -1,5 +1,10 @@
 #include "../includes/MainWindow.h"
 #include "../includes/exceptions/DuplicateMovieException.h"
+#include "../includes/exceptions/InvalidInputException.h"
+#include "../includes/exceptions/MovieException.h"
+#include "../includes/exceptions/FileNotFoundException.h"
+#include "../includes/exceptions/DuplicateCollectionException.h"
+#include "../includes/exceptions/CollectionNotFoundException.h"
 
 #include <QInputDialog>
 #include <QMessageBox>
@@ -544,7 +549,9 @@ void MainWindow::handleSearch() {
         
         populateAllMovies(filtered);
         statusbar->showMessage(QString("Found %1 movie(s)").arg(filtered.size()), 2000);
-    } catch (const std::exception& e) {
+    } catch (const InvalidInputException& e) {
+        QMessageBox::warning(this, "Search error", e.what());
+    } catch (const MovieException& e) {
         QMessageBox::warning(this, "Search error", e.what());
     }
 }
@@ -710,7 +717,9 @@ void MainWindow::handleAddMovie() {
                     } catch (const DuplicateMovieException& e) {
                         QMessageBox::warning(this, "Дубликат фильма", QString::fromStdString(e.what()));
                         statusbar->showMessage("Фильм уже существует в фильмотеке", 3000);
-                    } catch (const std::exception& e) {
+                    } catch (const FileNotFoundException& e) {
+                        QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
+                    } catch (const MovieException& e) {
                         QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
                     }
                 });
@@ -726,7 +735,9 @@ void MainWindow::handleAddMovie() {
                 } catch (const DuplicateMovieException& e) {
                     QMessageBox::warning(this, "Дубликат фильма", QString::fromStdString(e.what()));
                     statusbar->showMessage("Фильм уже существует в фильмотеке", 3000);
-    } catch (const std::exception& e) {
+                } catch (const FileNotFoundException& e) {
+                    QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
+                } catch (const MovieException& e) {
                     QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
                 }
             }
@@ -748,7 +759,7 @@ void MainWindow::handleSortByRating() {
         isSortedByRating = true;
         populateAllMovies(manager.getAllMovies());
         statusbar->showMessage("Sorted by rating", 2000);
-    } catch (const std::exception& e) {
+    } catch (const MovieException& e) {
         QMessageBox::warning(this, "Sort error", e.what());
     }
 }
@@ -761,7 +772,9 @@ void MainWindow::handleShowTopN() {
         auto top = manager.topRatedResults(n);
         populateAllMovies(top);
         statusbar->showMessage("Showing top N", 2000);
-    } catch (const std::exception& e) {
+    } catch (const InvalidInputException& e) {
+        QMessageBox::warning(this, "Top N error", e.what());
+    } catch (const MovieException& e) {
         QMessageBox::warning(this, "Top N error", e.what());
     }
 }
@@ -784,7 +797,9 @@ void MainWindow::handleHome() {
         populateCollections();
         populateGenres();
         statusbar->showMessage("Home", 1500);
-    } catch (const std::exception& e) {
+    } catch (const FileNotFoundException& e) {
+        QMessageBox::warning(this, "Home", e.what());
+    } catch (const MovieException& e) {
         QMessageBox::warning(this, "Home", e.what());
     }
 }
@@ -811,7 +826,13 @@ void MainWindow::handleCreateCollection() {
                                  QString("Collection '%1' created successfully!").arg(name));
         statusbar->showMessage(QString("Collection '%1' created").arg(name), 3000);
         populateCollections();
-    } catch (const std::exception& e) {
+    } catch (const DuplicateCollectionException& e) {
+        QMessageBox::warning(this, "Error", e.what());
+    } catch (const InvalidInputException& e) {
+        QMessageBox::warning(this, "Error", e.what());
+    } catch (const FileNotFoundException& e) {
+        QMessageBox::warning(this, "Error", e.what());
+    } catch (const MovieException& e) {
         QMessageBox::warning(this, "Error", e.what());
     }
 }
@@ -856,7 +877,11 @@ void MainWindow::handleDeleteCollection() {
             statusbar->showMessage("Коллекция удалена", 2000);
             populateCollections();
             handleCollectionChanged();
-        } catch (const std::exception& e) {
+        } catch (const CollectionNotFoundException& e) {
+            QMessageBox::warning(this, "Ошибка", e.what());
+        } catch (const FileNotFoundException& e) {
+            QMessageBox::warning(this, "Ошибка", e.what());
+        } catch (const MovieException& e) {
             QMessageBox::warning(this, "Ошибка", e.what());
         }
     }

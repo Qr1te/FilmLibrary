@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <ranges>
 #include <cctype>
+#include <stdexcept>
 
 
 MovieCollection::MovieCollection(const std::string& name, const std::vector<Movie>* allMovies)
@@ -19,7 +20,8 @@ MovieCollection::MovieCollection(const std::string& name, const std::vector<Movi
     
     try {
         std::filesystem::create_directories("collections");
-    } catch (const std::exception&) {
+    } catch (const std::filesystem::filesystem_error&) {
+        // Игнорируем ошибки создания директории
     }
 }
 
@@ -170,7 +172,8 @@ CollectionManager::CollectionManager(const std::vector<Movie>* allMovies, const 
     : allMoviesRef(allMovies), collectionsDirectory(dir) {
     try {
         std::filesystem::create_directories(collectionsDirectory);
-    } catch (const std::exception&) {
+    } catch (const std::filesystem::filesystem_error&) {
+        // Игнорируем ошибки создания директории
     }
     loadAll();
 }
@@ -216,7 +219,8 @@ void CollectionManager::deleteCollection(const std::string& name) {
         if (std::filesystem::exists(filename)) {
             std::filesystem::remove(filename);
         }
-    } catch (const std::exception&) {
+    } catch (const std::filesystem::filesystem_error&) {
+        // Игнорируем ошибки удаления файла
     }
     
     collections.erase(it);
@@ -235,7 +239,10 @@ void CollectionManager::saveAll() const {
     for (const auto& pair : collections) {
         try {
             pair.second->save();
-        } catch (const std::exception&) {
+        } catch (const FileNotFoundException&) {
+            // Игнорируем ошибки сохранения отдельных коллекций
+        } catch (const MovieException&) {
+            // Игнорируем ошибки сохранения отдельных коллекций
         }
     }
 }
@@ -277,7 +284,10 @@ void CollectionManager::loadAll() {
                 }
             }
         }
-    } catch (const std::exception&) {
+    } catch (const std::filesystem::filesystem_error&) {
+        // Игнорируем ошибки файловой системы при загрузке коллекций
+    } catch (const FileNotFoundException&) {
+        // Игнорируем отсутствующие файлы коллекций
     }
 }
 
