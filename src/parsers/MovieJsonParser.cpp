@@ -349,3 +349,4 @@ QString MovieJsonParser::extractPosterUrl(const QJsonObject& movieJson) {
     return posterUrl;
 }
 
+

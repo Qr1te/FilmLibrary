@@ -210,7 +210,7 @@ void PosterManager::loadImageToLabel(QLabel* label, const QString& filePath) con
     }
 }
 
-void PosterManager::loadPosterToLabel(QLabel* label, const Movie& movie) {
+void PosterManager::loadPosterToLabel(QLabel* label, const Movie& movie) const {
     if (!label) return;
     
     QString posterPath = QString::fromStdString(movie.getPosterPath());
@@ -230,7 +230,7 @@ void PosterManager::loadPosterToLabel(QLabel* label, const Movie& movie) {
     label->setAlignment(Qt::AlignCenter);
 }
 
-void PosterManager::loadPosterToLabelByTitle(QLabel* label, const QString& movieTitle) {
+void PosterManager::loadPosterToLabelByTitle(QLabel* label, const QString& movieTitle) const {
     if (!label) return;
     
     if (QString fullPath = findPosterFileByTitle(movieTitle); !fullPath.isEmpty()) {
@@ -278,7 +278,7 @@ void PosterManager::downloadPoster(const QString& posterUrl, const QString& save
     });
 }
 
-void PosterManager::onPosterDownloadFinished(QNetworkReply* reply, const QString& savePath, const std::function<void(bool)>& callback) {
+void PosterManager::onPosterDownloadFinished(QNetworkReply* reply, const QString& savePath, const std::function<void(bool)>& callback) const {
     bool success = false;
     
     if (reply->error() == QNetworkReply::NoError) {
@@ -287,10 +287,12 @@ void PosterManager::onPosterDownloadFinished(QNetworkReply* reply, const QString
         if (!imageData.isEmpty()) {
             QString imageFormat = "JPEG";
             QString fileExtension = "jpg";
-            if (imageData.startsWith("\xFF\xD8\xFF")) {
+            QByteArray jpegHeader = QByteArray::fromHex("FFD8FF");
+            QByteArray pngHeader = QByteArray::fromHex("89") + "PNG";
+            if (imageData.startsWith(jpegHeader)) {
                 imageFormat = "JPEG";
                 fileExtension = "jpg";
-            } else if (imageData.startsWith("\x89PNG")) {
+            } else if (imageData.startsWith(pngHeader)) {
                 imageFormat = "PNG";
                 fileExtension = "png";
             } else if (imageData.startsWith("GIF")) {
@@ -304,11 +306,9 @@ void PosterManager::onPosterDownloadFinished(QNetworkReply* reply, const QString
             QImage image;
             if (!image.loadFromData(imageData) && !image.loadFromData(imageData, imageFormat.toUtf8().constData())) {
                 QStringList formats = {"JPEG", "JPG", "PNG", "GIF", "BMP"};
-                bool loaded = false;
                 for (const QString& fmt : formats) {
                     if (image.loadFromData(imageData, fmt.toUtf8().constData())) {
                         imageFormat = fmt;
-                        loaded = true;
                         break;
                     }
                 }

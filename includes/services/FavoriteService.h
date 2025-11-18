@@ -28,3 +28,4 @@ public:
 
 #endif // BETA2_FAVORITESERVICE_H
 
+

@@ -398,7 +398,7 @@ void MainWindow::populateGridLayoutWithMovies(QGridLayout* layout, QWidget* pare
     }
     
     clearGridLayout(layout);
-    
+
     const int columns = 4;
     int row = 0;
     int col = 0;
@@ -411,7 +411,7 @@ void MainWindow::populateGridLayoutWithMovies(QGridLayout* layout, QWidget* pare
             col++;
             if (col >= columns) {
                 col = 0;
-                row++;
+        row++;
             }
         }
     }
@@ -419,8 +419,8 @@ void MainWindow::populateGridLayoutWithMovies(QGridLayout* layout, QWidget* pare
 
 void MainWindow::populateAllMovies(const std::vector<Movie>& movies) {
     populateGridLayoutWithMovies(tabAllUI.gridLayoutMovies, tabAllUI.scrollAreaWidgetContentsAll, movies);
-}
-
+    }
+    
 void MainWindow::populateFavorites() {
     auto favs = manager.getFavoriteMovies();
     populateGridLayoutWithMovies(tabFavoritesUI.gridLayoutFavorites, tabFavoritesUI.scrollAreaWidgetContentsFavorites, favs);
@@ -530,7 +530,7 @@ void MainWindow::onMovieSearchSuccess(const Movie& movie, const QString& posterU
                 [this, movie, posterDir, sep, movieId = movie.getId()](bool success) {
                     onPosterDownloadFinished(movie, posterDir, sep, movieId, success);
                 });
-        } else {
+    } else {
             handleAddMovieToFile(movie);
         }
     }
@@ -694,11 +694,11 @@ void MainWindow::handleAddMovie() {
         managers.apiClient->searchMovie(title, 
         [this](const Movie& movie, const QString& posterUrl) {
             onMovieSearchSuccess(movie, posterUrl);
-        },
-        [this](const QString& errorMessage) {
-            statusbar->showMessage("Ошибка поиска: " + errorMessage, 3000);
-            QMessageBox::warning(this, "Ошибка поиска", "Не удалось выполнить поиск фильма:\n" + errorMessage);
-        });
+    },
+    [this](const QString& errorMessage) {
+        statusbar->showMessage("Ошибка поиска: " + errorMessage, 3000);
+        QMessageBox::warning(this, "Ошибка поиска", "Не удалось выполнить поиск фильма:\n" + errorMessage);
+    });
     } else {
         delete dialog;
     }
