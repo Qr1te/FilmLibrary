@@ -50,7 +50,7 @@
 #include <QSizePolicy>
 
 MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent), isSortedByRating(false) {
+    : QMainWindow(parent) {
     setupUI();
 
     managers.networkManager = new QNetworkAccessManager(this);
@@ -274,7 +274,7 @@ void MainWindow::populateGenres() {
             genres.insert(stdStringToQString(genre));
         }
     }
-    QStringList sorted = QStringList(genres.begin(), genres.end());
+    auto sorted = QStringList(genres.begin(), genres.end());
     sorted.sort(Qt::CaseInsensitive);
     searchUI.genreComboBox->addItems(sorted);
 }
@@ -291,9 +291,9 @@ void MainWindow::showMovieInfo(const Movie& movie) {
             "QPushButton:hover { background-color: #ff8555; }"
         );
         
-        auto* mainLayout = new QHBoxLayout(dialog);
-        mainLayout->setSpacing(20);
-        mainLayout->setContentsMargins(20, 20, 20, 20);
+        auto* dialogLayout = new QHBoxLayout(dialog);
+        dialogLayout->setSpacing(20);
+        dialogLayout->setContentsMargins(20, 20, 20, 20);
         
         auto* posterLabel = new QLabel();
         posterLabel->setMinimumSize(450, 675);
@@ -301,7 +301,7 @@ void MainWindow::showMovieInfo(const Movie& movie) {
         posterLabel->setAlignment(Qt::AlignCenter);
         posterLabel->setStyleSheet("border: 1px solid #555; border-radius: 4px; background-color: #3a3a3a;");
     managers.posterManager->loadPosterToLabel(posterLabel, movie);
-        mainLayout->addWidget(posterLabel);
+        dialogLayout->addWidget(posterLabel);
         
         auto* infoLayout = new QVBoxLayout();
         infoLayout->setSpacing(10);
@@ -373,7 +373,7 @@ void MainWindow::showMovieInfo(const Movie& movie) {
         connect(closeBtn, &QPushButton::clicked, dialog, &QDialog::accept);
         infoLayout->addWidget(closeBtn, 0, Qt::AlignRight);
         
-        mainLayout->addLayout(infoLayout);
+        dialogLayout->addLayout(infoLayout);
         
         dialog->exec();
         delete dialog;
@@ -491,6 +491,86 @@ void MainWindow::handleAddMovieToFile(const Movie& movie) {
     } catch (const MovieException& e) {
         QMessageBox::warning(this, "Ошибка", "Не удалось добавить фильм: " + QString(e.what()));
     }
+}
+
+void MainWindow::onMovieSearchSuccess(const Movie& movie, const QString& posterUrl) {
+    if (movie.getId() == 0) {
+        statusbar->showMessage("Фильм не найден", 3000);
+        QMessageBox::information(this, "Результат поиска", "Фильм не найден.\n\nПопробуйте:\n- Проверить название фильма\n- Использовать оригинальное название\n- Добавить API ключ для расширенного поиска");
+        return;
+    }
+
+    QString infoText = QString("Фильм найден:\n\n") +
+                       QString("Название: %1\n").arg(stdStringToQString(movie.getTitle())) +
+                       QString("Год: %1\n").arg(movie.getYear()) +
+                       QString("Рейтинг: %1\n").arg(movie.getRating());
+
+    if (QString director = stdStringToQString(movie.getDirector()); !director.isEmpty()) {
+        infoText += QString("Режиссер: %1\n").arg(director);
+    }
+
+    if (QString actors = stdStringToQString(movie.getActors()); !actors.isEmpty()) {
+        infoText += QString("Актеры: %1\n").arg(actors);
+    }
+
+    infoText += "\nДобавить фильм в фильмотеку?";
+
+    int ret = QMessageBox::question(this, "Фильм найден", infoText,
+                                    QMessageBox::Yes | QMessageBox::No);
+
+    if (ret == QMessageBox::Yes) {
+        QString posterDir = findPosterDirectory();
+        QString sep = QDir::separator();
+        QString posterFileName = QString::number(movie.getId()) + ".jpg";
+        QString savePath = posterDir + sep + posterFileName;
+
+        if (!posterUrl.isEmpty()) {
+            statusbar->showMessage("Загрузка постера...", 0);
+            managers.posterManager->downloadPoster(posterUrl, savePath, 
+                [this, movie, posterDir, sep, movieId = movie.getId()](bool success) {
+                    onPosterDownloadFinished(movie, posterDir, sep, movieId, success);
+                });
+        } else {
+            handleAddMovieToFile(movie);
+        }
+    }
+}
+
+void MainWindow::onPosterDownloadFinished(const Movie& movie, const QString& posterDir, const QString& sep, int movieId, bool success) {
+    Movie movieToAdd = movie;
+    QString relativePath = "";
+
+    if (success) {
+        QString posterFileNameJpg = QString::number(movieId) + ".jpg";
+        QString posterFileNamePng = QString::number(movieId) + ".png";
+        QString fullPosterPathJpg = posterDir + sep + posterFileNameJpg;
+        QString fullPosterPathPng = posterDir + sep + posterFileNamePng;
+
+        QThread::msleep(100);
+
+        if (QFile::exists(fullPosterPathJpg)) {
+            relativePath = "posters/" + posterFileNameJpg;
+        } else if (QFile::exists(fullPosterPathPng)) {
+            relativePath = "posters/" + posterFileNamePng;
+        } else {
+            QDir dir(posterDir);
+            QStringList filters;
+            filters << QString::number(movieId) + ".*";
+            QFileInfoList files = dir.entryInfoList(filters, QDir::Files);
+            if (!files.isEmpty()) {
+                relativePath = "posters/" + files.first().fileName();
+            } else {
+                relativePath = "posters/" + posterFileNameJpg;
+            }
+        }
+        movieToAdd.setPosterPath(relativePath.toStdString());
+        statusbar->showMessage("Постер загружен!", 2000);
+    } else {
+        relativePath = "posters/" + QString::number(movieId) + ".jpg";
+        movieToAdd.setPosterPath(relativePath.toStdString());
+    }
+
+    handleAddMovieToFile(movieToAdd);
 }
 
 void MainWindow::handleCollectionChanged() {
@@ -613,83 +693,12 @@ void MainWindow::handleAddMovie() {
         
         managers.apiClient->searchMovie(title, 
         [this](const Movie& movie, const QString& posterUrl) {
-        if (movie.getId() == 0) {
-            statusbar->showMessage("Фильм не найден", 3000);
-            QMessageBox::information(this, "Результат поиска", "Фильм не найден.\n\nПопробуйте:\n- Проверить название фильма\n- Использовать оригинальное название\n- Добавить API ключ для расширенного поиска");
-            return;
-        }
-
-        QString infoText = QString("Фильм найден:\n\n") +
-                           QString("Название: %1\n").arg(stdStringToQString(movie.getTitle())) +
-                           QString("Год: %1\n").arg(movie.getYear()) +
-                           QString("Рейтинг: %1\n").arg(movie.getRating());
-
-        if (QString director = stdStringToQString(movie.getDirector()); !director.isEmpty()) {
-            infoText += QString("Режиссер: %1\n").arg(director);
-        }
-
-        if (QString actors = stdStringToQString(movie.getActors()); !actors.isEmpty()) {
-            infoText += QString("Актеры: %1\n").arg(actors);
-        }
-
-        infoText += "\nДобавить фильм в фильмотеку?";
-
-        int ret = QMessageBox::question(this, "Фильм найден", infoText,
-                                        QMessageBox::Yes | QMessageBox::No);
-
-        if (ret == QMessageBox::Yes) {
-            QString posterDir = findPosterDirectory();
-            QString sep = QDir::separator();
-            QString posterFileName = QString::number(movie.getId()) + ".jpg";
-            QString savePath = posterDir + sep + posterFileName;
-
-            if (!posterUrl.isEmpty()) {
-                statusbar->showMessage("Загрузка постера...", 0);
-                managers.posterManager->downloadPoster(posterUrl, savePath, [this, movie, posterDir, sep, movieId = movie.getId()](bool success) {
-                    Movie movieToAdd = movie;
-                    QString relativePath = "";
-
-                    if (success) {
-                        QString posterFileNameJpg = QString::number(movieId) + ".jpg";
-                        QString posterFileNamePng = QString::number(movieId) + ".png";
-                        QString fullPosterPathJpg = posterDir + sep + posterFileNameJpg;
-                        QString fullPosterPathPng = posterDir + sep + posterFileNamePng;
-
-                        QThread::msleep(100);
-
-                        if (QFile::exists(fullPosterPathJpg)) {
-                            relativePath = "posters/" + posterFileNameJpg;
-                        } else if (QFile::exists(fullPosterPathPng)) {
-                            relativePath = "posters/" + posterFileNamePng;
-                        } else {
-                            QDir dir(posterDir);
-                            QStringList filters;
-                            filters << QString::number(movieId) + ".*";
-                            QFileInfoList files = dir.entryInfoList(filters, QDir::Files);
-                            if (!files.isEmpty()) {
-                                relativePath = "posters/" + files.first().fileName();
-                            } else {
-                                relativePath = "posters/" + posterFileNameJpg;
-                            }
-                        }
-                        movieToAdd.setPosterPath(relativePath.toStdString());
-                        statusbar->showMessage("Постер загружен!", 2000);
-            } else {
-                        relativePath = "posters/" + QString::number(movieId) + ".jpg";
-                        movieToAdd.setPosterPath(relativePath.toStdString());
-                    }
-
-                    handleAddMovieToFile(movieToAdd);
-                });
-            } else {
-                handleAddMovieToFile(movie);
-            }
-        }
-    },
-    [this](const QString& errorMessage) {
-        statusbar->showMessage("Ошибка поиска: " + errorMessage, 3000);
-        QMessageBox::warning(this, "Ошибка поиска", "Не удалось выполнить поиск фильма:\n" + errorMessage);
-    });
+            onMovieSearchSuccess(movie, posterUrl);
+        },
+        [this](const QString& errorMessage) {
+            statusbar->showMessage("Ошибка поиска: " + errorMessage, 3000);
+            QMessageBox::warning(this, "Ошибка поиска", "Не удалось выполнить поиск фильма:\n" + errorMessage);
+        });
     } else {
         delete dialog;
     }
@@ -747,10 +756,10 @@ void MainWindow::handleHome() {
     }
 }
 
-void MainWindow::handleAllSelectionChanged() {
+void MainWindow::handleAllSelectionChanged() const {
 }
 
-void MainWindow::handleFavSelectionChanged() {
+void MainWindow::handleFavSelectionChanged() const {
 }
 
 void MainWindow::handleCreateCollection() {

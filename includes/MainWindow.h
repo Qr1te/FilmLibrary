@@ -42,8 +42,11 @@ private slots:
     void handleSortByRating();
     void handleShowTopN();
     void handleHome();
-    void handleAllSelectionChanged();
-    void handleFavSelectionChanged();
+    void handleAllSelectionChanged() const;
+    void handleFavSelectionChanged() const;
+    
+    void onMovieSearchSuccess(const Movie& movie, const QString& posterUrl);
+    void onPosterDownloadFinished(const Movie& movie, const QString& posterDir, const QString& sep, int movieId, bool success);
     void handleCreateCollection();
     void handleDeleteCollection();
     void handleCollectionChanged();
@@ -122,7 +125,7 @@ private:
     QTabWidget* tabWidget;
     QStatusBar* statusbar;
     MovieManager manager;
-    bool isSortedByRating;
+    bool isSortedByRating = false;
     
     SearchUI searchUI;
     TabAllUI tabAllUI;
