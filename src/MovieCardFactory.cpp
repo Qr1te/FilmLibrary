@@ -46,19 +46,19 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
         return nullptr;
     }
     
-    QWidget* card = new QWidget(parent);
+    auto* card = new QWidget(parent);
     card->setFixedSize(320, 600);
     card->setStyleSheet(
         "QWidget { background-color: #3a3a3a; border-radius: 8px; border: 1px solid #555; }"
         "QLabel { background-color: transparent; color: #e0e0e0; }"
     );
 
-    QVBoxLayout* cardLayout = new QVBoxLayout(card);
+    auto* cardLayout = new QVBoxLayout(card);
     cardLayout->setContentsMargins(10, 10, 10, 10);
     cardLayout->setSpacing(6);
     cardLayout->setAlignment(Qt::AlignTop);
 
-    QLabel* posterLabel = new QLabel();
+    auto* posterLabel = new QLabel();
     posterLabel->setFixedSize(300, 450);
     posterLabel->setAlignment(Qt::AlignCenter);
     posterLabel->setScaledContents(false);
@@ -67,7 +67,7 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     cardLayout->addWidget(posterLabel, 0, Qt::AlignHCenter);
     cardLayout->addSpacing(4);
 
-    QLabel* titleLabel = new QLabel(QString::fromStdString(movie.getTitle()));
+    auto* titleLabel = new QLabel(QString::fromStdString(movie.getTitle()));
     titleLabel->setStyleSheet("font-size: 15px; font-weight: bold; color: #ff6b35;");
     titleLabel->setWordWrap(true);
     titleLabel->setMaximumHeight(40);
@@ -78,7 +78,7 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
         .arg(movie.getYear())
         .arg(QString::fromStdString(movie.getCountry()))
         .arg(QString::fromStdString(movie.getGenreString()));
-    QLabel* infoLabel = new QLabel(infoText);
+    auto* infoLabel = new QLabel(infoText);
     infoLabel->setStyleSheet("font-size: 11px; color: #bbb;");
     infoLabel->setWordWrap(true);
     infoLabel->setMaximumHeight(30);
@@ -91,23 +91,23 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     } else {
         directorText = "Режиссер: " + directorText;
     }
-    QLabel* directorLabel = new QLabel(directorText);
+    auto* directorLabel = new QLabel(directorText);
     directorLabel->setStyleSheet("font-size: 10px; color: #999;");
     directorLabel->setWordWrap(true);
     directorLabel->setMaximumHeight(25);
     directorLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     cardLayout->addWidget(directorLabel);
 
-    QHBoxLayout* ratingButtonsLayout = new QHBoxLayout();
-    QLabel* ratingLabel = new QLabel(QString::number(movie.getRating(), 'f', 1));
+    auto* ratingButtonsLayout = new QHBoxLayout();
+    auto* ratingLabel = new QLabel(QString::number(movie.getRating(), 'f', 1));
     ratingLabel->setStyleSheet("font-size: 16px; font-weight: bold; color: #46d369;");
     ratingButtonsLayout->addWidget(ratingLabel);
     ratingButtonsLayout->addStretch();
 
-    QHBoxLayout* buttonsLayout = new QHBoxLayout();
+    auto* buttonsLayout = new QHBoxLayout();
     buttonsLayout->setSpacing(5);
     
-    QPushButton* playBtn = new QPushButton("▶");
+    auto* playBtn = new QPushButton("▶");
     playBtn->setFixedSize(35, 35);
     playBtn->setToolTip("Открыть на Кинопоиске");
     playBtn->setStyleSheet(
@@ -116,7 +116,7 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     );
     playBtn->setCursor(Qt::PointingHandCursor);
     
-    QPushButton* favoriteBtn = new QPushButton("★");
+    auto* favoriteBtn = new QPushButton("★");
     favoriteBtn->setFixedSize(35, 35);
     favoriteBtn->setToolTip("Добавить в избранное");
     bool isFav = movieManager->isFavorite(movie.getId());
@@ -126,12 +126,12 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
         favoriteBtn->setStyleSheet("background-color: #555; color: #ccc; font-size: 18px; border-radius: 4px; border: 1px solid #777;");
     }
     
-    QPushButton* moreBtn = new QPushButton("⋯");
+    auto* moreBtn = new QPushButton("⋯");
     moreBtn->setFixedSize(35, 35);
     moreBtn->setToolTip("Дополнительные опции");
     moreBtn->setStyleSheet("background-color: #555; color: #ccc; font-size: 22px; border-radius: 4px; border: 1px solid #777;");
     
-    QPushButton* infoBtn = new QPushButton("Информация");
+    auto* infoBtn = new QPushButton("Информация");
     infoBtn->setStyleSheet(
         "background-color: #ff6b35;"
         "color: white; font-weight: bold; padding: 8px; border-radius: 4px; border: none;"

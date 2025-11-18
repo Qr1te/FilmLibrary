@@ -275,7 +275,7 @@ void MainWindow::populateGenres() {
 }
 
 void MainWindow::showMovieInfo(const Movie& movie) {
-        QDialog* dialog = new QDialog(this);
+        auto* dialog = new QDialog(this);
     dialog->setWindowTitle("Информация о фильме");
         dialog->setMinimumSize(1100, 750);
         dialog->setStyleSheet(
@@ -286,11 +286,11 @@ void MainWindow::showMovieInfo(const Movie& movie) {
             "QPushButton:hover { background-color: #ff8555; }"
         );
         
-        QHBoxLayout* mainLayout = new QHBoxLayout(dialog);
+        auto* mainLayout = new QHBoxLayout(dialog);
         mainLayout->setSpacing(20);
         mainLayout->setContentsMargins(20, 20, 20, 20);
         
-        QLabel* posterLabel = new QLabel();
+        auto* posterLabel = new QLabel();
         posterLabel->setMinimumSize(450, 675);
         posterLabel->setMaximumSize(450, 675);
         posterLabel->setAlignment(Qt::AlignCenter);
@@ -298,23 +298,23 @@ void MainWindow::showMovieInfo(const Movie& movie) {
     posterManager->loadPosterToLabel(posterLabel, movie);
         mainLayout->addWidget(posterLabel);
         
-        QVBoxLayout* infoLayout = new QVBoxLayout();
+        auto* infoLayout = new QVBoxLayout();
         infoLayout->setSpacing(10);
         
-        QLabel* titleLabel = new QLabel(QString::fromStdString(movie.getTitle()));
+        auto* titleLabel = new QLabel(QString::fromStdString(movie.getTitle()));
         titleLabel->setStyleSheet("font-size: 20pt; font-weight: bold; color: #ff6b35;");
         titleLabel->setWordWrap(true);
         infoLayout->addWidget(titleLabel);
         
-    QLabel* ratingLabel = new QLabel(QString("Рейтинг: %1").arg(movie.getRating(), 0, 'f', 1));
+    auto* ratingLabel = new QLabel(QString("Рейтинг: %1").arg(movie.getRating(), 0, 'f', 1));
         ratingLabel->setStyleSheet("font-size: 14pt; font-weight: bold; color: #46d369;");
         infoLayout->addWidget(ratingLabel);
         
-    QLabel* yearLabel = new QLabel(QString("Год: %1").arg(movie.getYear()));
+    auto* yearLabel = new QLabel(QString("Год: %1").arg(movie.getYear()));
         yearLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
         infoLayout->addWidget(yearLabel);
         
-    QLabel* genreLabel = new QLabel(QString("Жанр: %1").arg(QString::fromStdString(movie.getGenreString())));
+    auto* genreLabel = new QLabel(QString("Жанр: %1").arg(QString::fromStdString(movie.getGenreString())));
         genreLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
         genreLabel->setWordWrap(true);
         infoLayout->addWidget(genreLabel);
@@ -323,7 +323,7 @@ void MainWindow::showMovieInfo(const Movie& movie) {
     if (directorText.isEmpty()) {
         directorText = "Не указано";
     }
-    QLabel* directorLabel = new QLabel(QString("Режиссер: %1").arg(directorText));
+    auto* directorLabel = new QLabel(QString("Режиссер: %1").arg(directorText));
         directorLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
         directorLabel->setWordWrap(true);
         infoLayout->addWidget(directorLabel);
@@ -332,7 +332,7 @@ void MainWindow::showMovieInfo(const Movie& movie) {
     if (countryText.isEmpty()) {
         countryText = "Не указано";
     }
-    QLabel* countryLabel = new QLabel(QString("Страна: %1").arg(countryText));
+    auto* countryLabel = new QLabel(QString("Страна: %1").arg(countryText));
         countryLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
         countryLabel->setWordWrap(true);
         infoLayout->addWidget(countryLabel);
@@ -341,21 +341,21 @@ void MainWindow::showMovieInfo(const Movie& movie) {
     if (actorsText.isEmpty()) {
         actorsText = "Не указано";
     }
-    QLabel* actorsLabel = new QLabel(QString("Актеры: %1").arg(actorsText));
+    auto* actorsLabel = new QLabel(QString("Актеры: %1").arg(actorsText));
         actorsLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
         actorsLabel->setWordWrap(true);
         infoLayout->addWidget(actorsLabel);
         
     QString durationText = QString("%1 мин").arg(movie.getDuration());
-    QLabel* durationLabel = new QLabel(QString("Длительность: %1").arg(durationText));
+    auto* durationLabel = new QLabel(QString("Длительность: %1").arg(durationText));
         durationLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
         infoLayout->addWidget(durationLabel);
         
-    QLabel* descTitleLabel = new QLabel("Описание:");
+    auto* descTitleLabel = new QLabel("Описание:");
         descTitleLabel->setStyleSheet("font-size: 12pt; font-weight: bold; color: #bbb; margin-top: 10px;");
         infoLayout->addWidget(descTitleLabel);
         
-        QTextEdit* descriptionText = new QTextEdit();
+        auto* descriptionText = new QTextEdit();
         descriptionText->setPlainText(QString::fromStdString(movie.getDescription()));
         descriptionText->setReadOnly(true);
         descriptionText->setMaximumHeight(150);
@@ -363,7 +363,7 @@ void MainWindow::showMovieInfo(const Movie& movie) {
         
         infoLayout->addStretch();
         
-    QPushButton* closeBtn = new QPushButton("ОК");
+    auto* closeBtn = new QPushButton("ОК");
         closeBtn->setCursor(Qt::PointingHandCursor);
         connect(closeBtn, &QPushButton::clicked, dialog, &QDialog::accept);
         infoLayout->addWidget(closeBtn, 0, Qt::AlignRight);
@@ -550,7 +550,7 @@ void MainWindow::handleSearch() {
 }
 
 void MainWindow::handleAddMovie() {
-    QDialog* dialog = new QDialog(this);
+    auto* dialog = new QDialog(this);
     dialog->setWindowTitle("Добавить фильм");
     dialog->setMinimumSize(500, 150);
     dialog->setStyleSheet(
@@ -562,23 +562,23 @@ void MainWindow::handleAddMovie() {
         "QPushButton:pressed { background-color: #e55a2b; }"
     );
     
-    QVBoxLayout* dialogLayout = new QVBoxLayout(dialog);
+    auto* dialogLayout = new QVBoxLayout(dialog);
     dialogLayout->setSpacing(15);
     dialogLayout->setContentsMargins(20, 20, 20, 20);
     
-    QLabel* titleLabel = new QLabel("Введите название фильма для добавления:");
+    auto* titleLabel = new QLabel("Введите название фильма для добавления:");
     titleLabel->setStyleSheet("font-size: 12pt; color: #e0e0e0;");
     dialogLayout->addWidget(titleLabel);
     
-    QLineEdit* searchInput = new QLineEdit();
+    auto* searchInput = new QLineEdit();
     searchInput->setPlaceholderText("Название фильма...");
     searchInput->setFocus();
     dialogLayout->addWidget(searchInput);
     
-    QHBoxLayout* buttonsLayout = new QHBoxLayout();
+    auto* buttonsLayout = new QHBoxLayout();
     buttonsLayout->addStretch();
     
-    QPushButton* cancelBtn = new QPushButton("Отмена");
+    auto* cancelBtn = new QPushButton("Отмена");
     cancelBtn->setStyleSheet(
         "background-color: #555; color: #e0e0e0; padding: 10px 20px; border-radius: 4px; font-weight: bold; font-size: 12pt;"
     );
@@ -586,7 +586,7 @@ void MainWindow::handleAddMovie() {
     connect(cancelBtn, &QPushButton::clicked, dialog, &QDialog::reject);
     buttonsLayout->addWidget(cancelBtn);
     
-    QPushButton* searchBtn = new QPushButton("Поиск");
+    auto* searchBtn = new QPushButton("Поиск");
     searchBtn->setCursor(Qt::PointingHandCursor);
     connect(searchBtn, &QPushButton::clicked, dialog, &QDialog::accept);
     buttonsLayout->addWidget(searchBtn);
