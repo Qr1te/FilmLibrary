@@ -239,29 +239,29 @@ void MainWindow::setupUI() {
 }
 
 void MainWindow::setupModelsAndViews() {
-    setStyleSheet(
-        "QMainWindow { background-color: #2b2b2b; }"
-        "QWidget { background-color: #2b2b2b; color: #e0e0e0; }"
-        "QLabel { color: #e0e0e0; background-color: transparent; }"
-        "QLineEdit { background-color: #3a3a3a; color: #e0e0e0; border: 1px solid #555; padding: 5px; border-radius: 4px; }"
-        "QComboBox { background-color: #3a3a3a; color: #e0e0e0; border: 1px solid #555; padding: 5px; border-radius: 4px; }"
-        "QPushButton { background-color: #ff6b35; color: white; border: none; padding: 8px; border-radius: 4px; font-weight: bold; }"
-        "QPushButton:hover { background-color: #ff8555; }"
-        "QPushButton:pressed { background-color: #e55a2b; }"
-        "QTabWidget::pane { border: 1px solid #555; background-color: #2b2b2b; }"
-        "QTabBar::tab { background-color: #3a3a3a; color: #e0e0e0; padding: 8px 16px; border-top-left-radius: 4px; border-top-right-radius: 4px; }"
-        "QTabBar::tab:selected { background-color: #ff6b35; color: white; }"
-        "QTabBar::tab:hover { background-color: #4a4a4a; }"
-        "QScrollArea { background-color: #2b2b2b; border: none; }"
-        "QTextEdit { background-color: #3a3a3a; color: #e0e0e0; border: 1px solid #555; border-radius: 4px; font-size: 11pt; line-height: 1.4; }"
-        "QStatusBar { background-color: #1e1e1e; color: #e0e0e0; }"
-        "QToolBar { background-color: #1e1e1e; border: none; }"
-        "QLabel[name=\"titleValue\"] { font-size: 16pt; font-weight: bold; color: #ff6b35; padding: 5px 0px; }"
-        "QLabel[name=\"titleLabel\"], QLabel[name=\"ratingLabel\"], QLabel[name=\"yearLabel\"], QLabel[name=\"genreLabel\"], QLabel[name=\"directorLabel\"] { font-size: 11pt; font-weight: bold; color: #bbb; padding: 3px 0px; }"
-        "QLabel[name=\"ratingValue\"] { font-size: 14pt; font-weight: bold; color: #46d369; padding: 3px 0px; }"
-        "QLabel[name=\"yearValue\"], QLabel[name=\"genreValue\"], QLabel[name=\"directorValue\"] { font-size: 11pt; color: #e0e0e0; padding: 3px 0px; }"
-        "QLabel[name=\"posterLabel\"] { padding: 10px; }"
-    );
+    setStyleSheet(R"(
+        QMainWindow { background-color: #2b2b2b; }
+        QWidget { background-color: #2b2b2b; color: #e0e0e0; }
+        QLabel { color: #e0e0e0; background-color: transparent; }
+        QLineEdit { background-color: #3a3a3a; color: #e0e0e0; border: 1px solid #555; padding: 5px; border-radius: 4px; }
+        QComboBox { background-color: #3a3a3a; color: #e0e0e0; border: 1px solid #555; padding: 5px; border-radius: 4px; }
+        QPushButton { background-color: #ff6b35; color: white; border: none; padding: 8px; border-radius: 4px; font-weight: bold; }
+        QPushButton:hover { background-color: #ff8555; }
+        QPushButton:pressed { background-color: #e55a2b; }
+        QTabWidget::pane { border: 1px solid #555; background-color: #2b2b2b; }
+        QTabBar::tab { background-color: #3a3a3a; color: #e0e0e0; padding: 8px 16px; border-top-left-radius: 4px; border-top-right-radius: 4px; }
+        QTabBar::tab:selected { background-color: #ff6b35; color: white; }
+        QTabBar::tab:hover { background-color: #4a4a4a; }
+        QScrollArea { background-color: #2b2b2b; border: none; }
+        QTextEdit { background-color: #3a3a3a; color: #e0e0e0; border: 1px solid #555; border-radius: 4px; font-size: 11pt; line-height: 1.4; }
+        QStatusBar { background-color: #1e1e1e; color: #e0e0e0; }
+        QToolBar { background-color: #1e1e1e; border: none; }
+        QLabel[name="titleValue"] { font-size: 16pt; font-weight: bold; color: #ff6b35; padding: 5px 0px; }
+        QLabel[name="titleLabel"], QLabel[name="ratingLabel"], QLabel[name="yearLabel"], QLabel[name="genreLabel"], QLabel[name="directorLabel"] { font-size: 11pt; font-weight: bold; color: #bbb; padding: 3px 0px; }
+        QLabel[name="ratingValue"] { font-size: 14pt; font-weight: bold; color: #46d369; padding: 3px 0px; }
+        QLabel[name="yearValue"], QLabel[name="genreValue"], QLabel[name="directorValue"] { font-size: 11pt; color: #e0e0e0; padding: 3px 0px; }
+        QLabel[name="posterLabel"] { padding: 10px; }
+    )");
 }
 
 void MainWindow::populateGenres() {
@@ -400,7 +400,8 @@ void MainWindow::populateGridLayoutWithMovies(QGridLayout* layout, QWidget* pare
     clearGridLayout(layout);
     
     const int columns = 4;
-    int row = 0, col = 0;
+    int row = 0;
+    int col = 0;
     
     for (const auto& movie : movies) {
         QWidget* card = cardFactory->createMovieCard(movie, parent);
@@ -507,7 +508,7 @@ void MainWindow::handleCollectionChanged() {
         return;
     }
     
-    MovieCollection* collection = collManager->getCollection(qStringToStdString(collectionName));
+    const MovieCollection* collection = collManager->getCollection(qStringToStdString(collectionName));
     if (!collection) {
         return;
     }
@@ -623,13 +624,11 @@ void MainWindow::handleAddMovie() {
                            QString("Год: %1\n").arg(movie.getYear()) +
                            QString("Рейтинг: %1\n").arg(movie.getRating());
 
-        QString director = stdStringToQString(movie.getDirector());
-        if (!director.isEmpty()) {
+        if (QString director = stdStringToQString(movie.getDirector()); !director.isEmpty()) {
             infoText += QString("Режиссер: %1\n").arg(director);
         }
 
-        QString actors = stdStringToQString(movie.getActors());
-        if (!actors.isEmpty()) {
+        if (QString actors = stdStringToQString(movie.getActors()); !actors.isEmpty()) {
             infoText += QString("Актеры: %1\n").arg(actors);
         }
 
@@ -764,7 +763,7 @@ void MainWindow::handleCreateCollection() {
     }
 
     try {
-        MovieCollection* collection = manager.createCollection(qStringToStdString(name));
+        manager.createCollection(qStringToStdString(name));
         QMessageBox::information(this, "Success",
                                  QString("Collection '%1' created successfully!").arg(name));
         statusbar->showMessage(QString("Collection '%1' created").arg(name), 3000);
