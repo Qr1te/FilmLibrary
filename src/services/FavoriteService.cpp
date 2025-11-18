@@ -11,7 +11,7 @@ void FavoriteService::reload() {
     favoriteIds = repository.loadAll();
 }
 
-void FavoriteService::save() {
+void FavoriteService::save() const {
     repository.saveAll(favoriteIds);
 }
 

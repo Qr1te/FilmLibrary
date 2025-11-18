@@ -19,7 +19,7 @@ public:
     explicit CollectionService(MovieService* movieService, const std::string& dir = "collections/");
     
     void reload();
-    void saveAll();
+    void saveAll() const;
     
     MovieCollection* createCollection(const std::string& name);
     MovieCollection* getCollection(const std::string& name);

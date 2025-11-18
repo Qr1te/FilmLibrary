@@ -16,7 +16,7 @@ public:
     explicit FavoriteService(MovieService* movieService, const std::string& favoritesFile = "favorites.txt");
     
     void reload();
-    void save();
+    void save() const;
     
     std::vector<Movie> getFavoriteMovies() const;
     bool isFavorite(int movieId) const;

@@ -17,7 +17,7 @@ public:
     explicit MovieService(const std::string& moviesFile = "movies.txt");
     
     void reload();
-    void save();
+    void save() const;
     
     const std::vector<Movie>& getAllMovies() const;
     const Movie* findById(int id) const;

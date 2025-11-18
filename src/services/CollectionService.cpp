@@ -19,9 +19,9 @@ void CollectionService::reload() {
     }
 }
 
-void CollectionService::saveAll() {
-    for (const auto& pair : collections) {
-        repository.saveCollection(*pair.second);
+void CollectionService::saveAll() const {
+    for (const auto& [name, collection] : collections) {
+        repository.saveCollection(*collection);
     }
 }
 
@@ -66,15 +66,15 @@ void CollectionService::deleteCollection(const std::string& name) {
 
 std::vector<std::string> CollectionService::getAllCollectionNames() const {
     std::vector<std::string> names;
-    for (const auto& pair : collections) {
-        names.push_back(pair.first);
+    for (const auto& [name, collection] : collections) {
+        names.push_back(name);
     }
     return names;
 }
 
 void CollectionService::updateMoviesReference() {
-    for (auto& pair : collections) {
-        pair.second->setAllMoviesRef(&movieService->getAllMovies());
+    for (auto& [name, collection] : collections) {
+        collection->setAllMoviesRef(&movieService->getAllMovies());
     }
 }
 

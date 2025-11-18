@@ -12,7 +12,7 @@ void MovieService::reload() {
     movies = repository.loadAll();
 }
 
-void MovieService::save() {
+void MovieService::save() const {
     repository.saveAll(movies);
 }
 
