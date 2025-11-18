@@ -108,7 +108,7 @@ MainWindow::~MainWindow() {
 
 void MainWindow::setupUI() {
 
-    setWindowTitle("Менеджер фильмов");
+    setWindowTitle("Домашняя фильмотека");
     resize(1100, 720);
     
     centralWidget = new QWidget(this);

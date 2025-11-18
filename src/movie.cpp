@@ -15,6 +15,11 @@ static std::string trim(std::string_view str) {
     return std::string(str.substr(first, (last - first + 1)));
 }
 
+Movie::Movie(const Data& data)
+    : id(data.id), title(data.title), rating(data.rating), year(data.year),
+      genres(data.genres), director(data.director), description(data.description),
+      posterPath(data.posterPath), country(data.country), actors(data.actors), duration(data.duration) {}
+
 Movie::Movie(int id, const std::string& title, double rating, int year,
              const std::vector<std::string>& genres, const std::string& director,
              const std::string& description, const std::string& posterPath,
@@ -78,53 +83,53 @@ int Movie::getDuration() const {
     return duration;
 }
 
-void Movie::setId(int id) {
-    this->id = id;
+void Movie::setId(int newId) {
+    id = newId;
 }
 
-void Movie::setTitle(std::string_view title) {
-    this->title = std::string(title);
+void Movie::setTitle(std::string_view newTitle) {
+    title = std::string(newTitle);
 }
 
-void Movie::setRating(double rating) {
-    this->rating = rating;
+void Movie::setRating(double newRating) {
+    rating = newRating;
 }
 
-void Movie::setYear(int year) {
-    this->year = year;
+void Movie::setYear(int newYear) {
+    year = newYear;
 }
 
-void Movie::setGenres(const std::vector<std::string>& genres) {
-    this->genres = genres;
+void Movie::setGenres(const std::vector<std::string>& newGenres) {
+    genres = newGenres;
 }
 
-void Movie::setDirector(std::string_view director) {
-    this->director = std::string(director);
+void Movie::setDirector(std::string_view newDirector) {
+    director = std::string(newDirector);
 }
 
-void Movie::setDescription(std::string_view description) {
-    this->description = std::string(description);
+void Movie::setDescription(std::string_view newDescription) {
+    description = std::string(newDescription);
 }
 
-void Movie::setPosterPath(std::string_view path) {
-    this->posterPath = std::string(path);
+void Movie::setPosterPath(std::string_view newPath) {
+    posterPath = std::string(newPath);
 }
 
-void Movie::setCountry(std::string_view country) {
-    this->country = std::string(country);
+void Movie::setCountry(std::string_view newCountry) {
+    country = std::string(newCountry);
 }
 
-void Movie::setActors(std::string_view actors) {
-    this->actors = std::string(actors);
+void Movie::setActors(std::string_view newActors) {
+    actors = std::string(newActors);
 }
 
-void Movie::setDuration(int duration) {
-    this->duration = duration;
+void Movie::setDuration(int newDuration) {
+    duration = newDuration;
 }
 
 void Movie::addGenre(std::string_view genre) {
     if (!genre.empty() && std::ranges::find(genres, std::string(genre)) == genres.end()) {
-        genres.push_back(std::string(genre));
+        genres.emplace_back(genre);
     }
 }
 
@@ -302,16 +307,4 @@ std::partial_ordering Movie::operator<=>(const Movie& other) const {
         return cmp;
     }
     return id <=> other.id;
-}
-
-std::ostream& operator<<(std::ostream& os, const Movie& movie) {
-    os << movie.toString();
-    return os;
-}
-
-std::istream& operator>>(std::istream& is, Movie& movie) {
-    if (std::string line; std::getline(is, line)) {
-        movie = Movie::fromString(line);
-    }
-    return is;
 }
