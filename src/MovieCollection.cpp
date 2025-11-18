@@ -14,7 +14,7 @@ MovieCollection::MovieCollection(const std::string& name, const std::vector<Movi
     
 
     std::string safeName = name;
-    std::replace(safeName.begin(), safeName.end(), ' ', '_');
+    std::ranges::replace(safeName, ' ', '_');
     std::transform(safeName.begin(), safeName.end(), safeName.begin(), ::tolower);
     filename = "collections/" + safeName + ".txt";
     
@@ -263,7 +263,7 @@ void CollectionManager::loadAll() {
                     if (collectionName.empty()) {
                         std::string filename = entry.path().filename().string();
                         collectionName = filename.substr(0, filename.length() - 4);
-                        std::replace(collectionName.begin(), collectionName.end(), '_', ' ');
+                        std::ranges::replace(collectionName, '_', ' ');
                         if (!collectionName.empty()) {
                             collectionName[0] = static_cast<char>(::toupper(collectionName[0]));
                         }
@@ -271,7 +271,7 @@ void CollectionManager::loadAll() {
                 } else {
                     std::string filename = entry.path().filename().string();
                     collectionName = filename.substr(0, filename.length() - 4);
-                    std::replace(collectionName.begin(), collectionName.end(), '_', ' ');
+                    std::ranges::replace(collectionName, '_', ' ');
                     if (!collectionName.empty()) {
                         collectionName[0] = static_cast<char>(::toupper(collectionName[0]));
                     }

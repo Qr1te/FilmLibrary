@@ -175,24 +175,24 @@ std::string Movie::toString() const {
     }
     
     std::string cleanDescription = description;
-    std::replace(cleanDescription.begin(), cleanDescription.end(), '\n', ' ');
-    std::replace(cleanDescription.begin(), cleanDescription.end(), '\r', ' ');
+    std::ranges::replace(cleanDescription, '\n', ' ');
+    std::ranges::replace(cleanDescription, '\r', ' ');
     
     std::string cleanTitle = title;
-    std::replace(cleanTitle.begin(), cleanTitle.end(), '\n', ' ');
-    std::replace(cleanTitle.begin(), cleanTitle.end(), '\r', ' ');
+    std::ranges::replace(cleanTitle, '\n', ' ');
+    std::ranges::replace(cleanTitle, '\r', ' ');
     
     std::string cleanDirector = director;
-    std::replace(cleanDirector.begin(), cleanDirector.end(), '\n', ' ');
-    std::replace(cleanDirector.begin(), cleanDirector.end(), '\r', ' ');
+    std::ranges::replace(cleanDirector, '\n', ' ');
+    std::ranges::replace(cleanDirector, '\r', ' ');
     
     std::string cleanCountry = country;
-    std::replace(cleanCountry.begin(), cleanCountry.end(), '\n', ' ');
-    std::replace(cleanCountry.begin(), cleanCountry.end(), '\r', ' ');
+    std::ranges::replace(cleanCountry, '\n', ' ');
+    std::ranges::replace(cleanCountry, '\r', ' ');
     
     std::string cleanActors = actors;
-    std::replace(cleanActors.begin(), cleanActors.end(), '\n', ' ');
-    std::replace(cleanActors.begin(), cleanActors.end(), '\r', ' ');
+    std::ranges::replace(cleanActors, '\n', ' ');
+    std::ranges::replace(cleanActors, '\r', ' ');
     
     oss << "|" << cleanDirector << "|" << cleanDescription << "|" << posterPath
         << "|" << cleanCountry << "|" << cleanActors << "|" << duration;
