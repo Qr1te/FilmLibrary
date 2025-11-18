@@ -167,7 +167,7 @@ const Movie* MovieManager::findMovieById(int id) const {
     return movieService->findById(id);
 }
 
-std::set<std::string> MovieManager::getAllGenres() const {
+std::set<std::string, std::less<>> MovieManager::getAllGenres() const {
     return movieService->getAllGenres();
 }
 

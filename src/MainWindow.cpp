@@ -53,17 +53,17 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent), isSortedByRating(false) {
     setupUI();
 
-    networkManager = new QNetworkAccessManager(this);
-    apiClient = new KinopoiskAPIClient(this);
-    posterManager = new PosterManager(this);
-    posterManager->setNetworkManager(networkManager);
-    cardFactory = new MovieCardFactory(&manager, posterManager, statusbar);
+    managers.networkManager = new QNetworkAccessManager(this);
+    managers.apiClient = new KinopoiskAPIClient(this);
+    managers.posterManager = new PosterManager(this);
+    managers.posterManager->setNetworkManager(managers.networkManager);
+    managers.cardFactory = new MovieCardFactory(&manager, managers.posterManager, statusbar);
     
-    cardFactory->setOnFavoritesChanged([this]() { populateFavorites(); });
-    cardFactory->setOnCollectionsChanged([this]() { populateCollections(); handleCollectionChanged(); });
-    cardFactory->setOnMoviesChanged([this]() { populateAllMovies(manager.getAllMovies()); });
-    cardFactory->setOnGenresChanged([this]() { populateGenres(); });
-    cardFactory->setOnShowInfo([this](const Movie& movie) { showMovieInfo(movie); });
+    managers.cardFactory->setOnFavoritesChanged([this]() { populateFavorites(); });
+    managers.cardFactory->setOnCollectionsChanged([this]() { populateCollections(); handleCollectionChanged(); });
+    managers.cardFactory->setOnMoviesChanged([this]() { populateAllMovies(manager.getAllMovies()); });
+    managers.cardFactory->setOnGenresChanged([this]() { populateGenres(); });
+    managers.cardFactory->setOnShowInfo([this](const Movie& movie) { showMovieInfo(movie); });
 
     setupModelsAndViews();
     populateGenres();
@@ -72,30 +72,30 @@ MainWindow::MainWindow(QWidget* parent)
     populateFavorites();
     populateCollections();
 
-    connect(searchButton, &QPushButton::clicked, this, &MainWindow::handleSearch);
-    connect(addMovieButton, &QPushButton::clicked, this, &MainWindow::handleAddMovie);
+    connect(searchUI.searchButton, &QPushButton::clicked, this, &MainWindow::handleSearch);
+    connect(searchUI.addMovieButton, &QPushButton::clicked, this, &MainWindow::handleAddMovie);
     
 
-    addMovieButton->setStyleSheet(
+    searchUI.addMovieButton->setStyleSheet(
         "QPushButton { background-color: #9FFF9F; color: #1a1a1a; border: none; padding: 8px; border-radius: 4px; font-weight: bold; }"
         "QPushButton:hover { background-color: #BFFFBF; }"
         "QPushButton:pressed { background-color: #7FFF7F; }"
     );
 
-    connect(actionSortByRating, &QAction::triggered, this, &MainWindow::handleSortByRating);
-    connect(actionTopN, &QAction::triggered, this, &MainWindow::handleShowTopN);
-    connect(actionHome, &QAction::triggered, this, &MainWindow::handleHome);
-    connect(createCollectionButton, &QPushButton::clicked, this, &MainWindow::handleCreateCollection);
-    connect(manageCollectionsButton, &QPushButton::clicked, this, &MainWindow::handleDeleteCollection);
-    connect(collectionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::handleCollectionChanged);
+    connect(toolBarUI.actionSortByRating, &QAction::triggered, this, &MainWindow::handleSortByRating);
+    connect(toolBarUI.actionTopN, &QAction::triggered, this, &MainWindow::handleShowTopN);
+    connect(toolBarUI.actionHome, &QAction::triggered, this, &MainWindow::handleHome);
+    connect(tabCollectionsUI.createCollectionButton, &QPushButton::clicked, this, &MainWindow::handleCreateCollection);
+    connect(tabCollectionsUI.manageCollectionsButton, &QPushButton::clicked, this, &MainWindow::handleDeleteCollection);
+    connect(tabCollectionsUI.collectionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::handleCollectionChanged);
     
-    createCollectionButton->setStyleSheet(
+    tabCollectionsUI.createCollectionButton->setStyleSheet(
         "QPushButton { background-color: #9FFF9F; color: #1a1a1a; border: none; padding: 8px; border-radius: 4px; font-weight: bold; }"
         "QPushButton:hover { background-color: #BFFFBF; }"
         "QPushButton:pressed { background-color: #7FFF7F; }"
     );
     
-    manageCollectionsButton->setStyleSheet(
+    tabCollectionsUI.manageCollectionsButton->setStyleSheet(
         "QPushButton { background-color: #FF6B6B; color: white; border: none; padding: 8px; border-radius: 4px; font-weight: bold; }"
         "QPushButton:hover { background-color: #FF8E8E; }"
         "QPushButton:pressed { background-color: #E55555;}"
@@ -118,121 +118,121 @@ void MainWindow::setupUI() {
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
     
-    searchLayout = new QHBoxLayout();
-    searchLayout->setContentsMargins(10, 10, 10, 10);
+    searchUI.searchLayout = new QHBoxLayout();
+    searchUI.searchLayout->setContentsMargins(10, 10, 10, 10);
     
-    addMovieButton = new QPushButton("Добавить фильм", centralWidget);
-    searchLayout->addWidget(addMovieButton);
+    searchUI.addMovieButton = new QPushButton("Добавить фильм", centralWidget);
+    searchUI.searchLayout->addWidget(searchUI.addMovieButton);
     
-    searchLineEdit = new QLineEdit(centralWidget);
-    searchLineEdit->setPlaceholderText("Поиск по названию...");
-    searchLayout->addWidget(searchLineEdit);
+    searchUI.searchLineEdit = new QLineEdit(centralWidget);
+    searchUI.searchLineEdit->setPlaceholderText("Поиск по названию...");
+    searchUI.searchLayout->addWidget(searchUI.searchLineEdit);
     
-    genreComboBox = new QComboBox(centralWidget);
-    genreComboBox->setEditable(true);
-    genreComboBox->setPlaceholderText("Жанр");
-    searchLayout->addWidget(genreComboBox);
+    searchUI.genreComboBox = new QComboBox(centralWidget);
+    searchUI.genreComboBox->setEditable(true);
+    searchUI.genreComboBox->setPlaceholderText("Жанр");
+    searchUI.searchLayout->addWidget(searchUI.genreComboBox);
     
-    searchButton = new QPushButton("Поиск", centralWidget);
-    searchLayout->addWidget(searchButton);
+    searchUI.searchButton = new QPushButton("Поиск", centralWidget);
+    searchUI.searchLayout->addWidget(searchUI.searchButton);
     
-    mainLayout->addLayout(searchLayout);
+    mainLayout->addLayout(searchUI.searchLayout);
     
 
     tabWidget = new QTabWidget(centralWidget);
     tabWidget->setCurrentIndex(0);
     
 
-    tabAll = new QWidget();
-    verticalLayoutAll = new QVBoxLayout(tabAll);
-    verticalLayoutAll->setContentsMargins(0, 0, 0, 0);
+    tabAllUI.tabAll = new QWidget();
+    tabAllUI.verticalLayoutAll = new QVBoxLayout(tabAllUI.tabAll);
+    tabAllUI.verticalLayoutAll->setContentsMargins(0, 0, 0, 0);
     
-    scrollAreaAll = new QScrollArea(tabAll);
-    scrollAreaAll->setWidgetResizable(true);
-    scrollAreaAll->setFrameShape(QFrame::NoFrame);
+    tabAllUI.scrollAreaAll = new QScrollArea(tabAllUI.tabAll);
+    tabAllUI.scrollAreaAll->setWidgetResizable(true);
+    tabAllUI.scrollAreaAll->setFrameShape(QFrame::NoFrame);
     
-    scrollAreaWidgetContentsAll = new QWidget();
-    scrollAreaWidgetContentsAll->setGeometry(0, 0, 1062, 617);
-    gridLayoutMovies = new QGridLayout(scrollAreaWidgetContentsAll);
-    gridLayoutMovies->setContentsMargins(10, 10, 10, 10);
-    gridLayoutMovies->setSpacing(10);
+    tabAllUI.scrollAreaWidgetContentsAll = new QWidget();
+    tabAllUI.scrollAreaWidgetContentsAll->setGeometry(0, 0, 1062, 617);
+    tabAllUI.gridLayoutMovies = new QGridLayout(tabAllUI.scrollAreaWidgetContentsAll);
+    tabAllUI.gridLayoutMovies->setContentsMargins(10, 10, 10, 10);
+    tabAllUI.gridLayoutMovies->setSpacing(10);
     
-    scrollAreaAll->setWidget(scrollAreaWidgetContentsAll);
-    verticalLayoutAll->addWidget(scrollAreaAll);
+    tabAllUI.scrollAreaAll->setWidget(tabAllUI.scrollAreaWidgetContentsAll);
+    tabAllUI.verticalLayoutAll->addWidget(tabAllUI.scrollAreaAll);
     
-    tabWidget->addTab(tabAll, "Все фильмы");
+    tabWidget->addTab(tabAllUI.tabAll, "Все фильмы");
     
 
-    tabFavorites = new QWidget();
-    verticalLayoutFav = new QVBoxLayout(tabFavorites);
-    verticalLayoutFav->setContentsMargins(0, 0, 0, 0);
+    tabFavoritesUI.tabFavorites = new QWidget();
+    tabFavoritesUI.verticalLayoutFav = new QVBoxLayout(tabFavoritesUI.tabFavorites);
+    tabFavoritesUI.verticalLayoutFav->setContentsMargins(0, 0, 0, 0);
     
-    scrollAreaFavorites = new QScrollArea(tabFavorites);
-    scrollAreaFavorites->setWidgetResizable(true);
-    scrollAreaFavorites->setFrameShape(QFrame::NoFrame);
+    tabFavoritesUI.scrollAreaFavorites = new QScrollArea(tabFavoritesUI.tabFavorites);
+    tabFavoritesUI.scrollAreaFavorites->setWidgetResizable(true);
+    tabFavoritesUI.scrollAreaFavorites->setFrameShape(QFrame::NoFrame);
     
-    scrollAreaWidgetContentsFavorites = new QWidget();
-    scrollAreaWidgetContentsFavorites->setGeometry(0, 0, 1062, 617);
-    gridLayoutFavorites = new QGridLayout(scrollAreaWidgetContentsFavorites);
-    gridLayoutFavorites->setContentsMargins(10, 10, 10, 10);
-    gridLayoutFavorites->setSpacing(10);
+    tabFavoritesUI.scrollAreaWidgetContentsFavorites = new QWidget();
+    tabFavoritesUI.scrollAreaWidgetContentsFavorites->setGeometry(0, 0, 1062, 617);
+    tabFavoritesUI.gridLayoutFavorites = new QGridLayout(tabFavoritesUI.scrollAreaWidgetContentsFavorites);
+    tabFavoritesUI.gridLayoutFavorites->setContentsMargins(10, 10, 10, 10);
+    tabFavoritesUI.gridLayoutFavorites->setSpacing(10);
     
-    scrollAreaFavorites->setWidget(scrollAreaWidgetContentsFavorites);
-    verticalLayoutFav->addWidget(scrollAreaFavorites);
+    tabFavoritesUI.scrollAreaFavorites->setWidget(tabFavoritesUI.scrollAreaWidgetContentsFavorites);
+    tabFavoritesUI.verticalLayoutFav->addWidget(tabFavoritesUI.scrollAreaFavorites);
     
-    tabWidget->addTab(tabFavorites, "Избранное");
+    tabWidget->addTab(tabFavoritesUI.tabFavorites, "Избранное");
 
-    tabCollections = new QWidget();
-    verticalLayoutCollections = new QVBoxLayout(tabCollections);
-    verticalLayoutCollections->setContentsMargins(0, 0, 0, 0);
+    tabCollectionsUI.tabCollections = new QWidget();
+    tabCollectionsUI.verticalLayoutCollections = new QVBoxLayout(tabCollectionsUI.tabCollections);
+    tabCollectionsUI.verticalLayoutCollections->setContentsMargins(0, 0, 0, 0);
     
-    horizontalLayoutCollectionSelector = new QHBoxLayout();
-    horizontalLayoutCollectionSelector->setContentsMargins(10, 10, 10, 10);
+    tabCollectionsUI.horizontalLayoutCollectionSelector = new QHBoxLayout();
+    tabCollectionsUI.horizontalLayoutCollectionSelector->setContentsMargins(10, 10, 10, 10);
     
-    collectionLabel = new QLabel("Выберите коллекцию:", tabCollections);
-    horizontalLayoutCollectionSelector->addWidget(collectionLabel);
+    tabCollectionsUI.collectionLabel = new QLabel("Выберите коллекцию:", tabCollectionsUI.tabCollections);
+    tabCollectionsUI.horizontalLayoutCollectionSelector->addWidget(tabCollectionsUI.collectionLabel);
     
-    collectionComboBox = new QComboBox(tabCollections);
-    collectionComboBox->setEditable(false);
-    horizontalLayoutCollectionSelector->addWidget(collectionComboBox);
+    tabCollectionsUI.collectionComboBox = new QComboBox(tabCollectionsUI.tabCollections);
+    tabCollectionsUI.collectionComboBox->setEditable(false);
+    tabCollectionsUI.horizontalLayoutCollectionSelector->addWidget(tabCollectionsUI.collectionComboBox);
     
-    createCollectionButton = new QPushButton("Создать коллекцию", tabCollections);
-    horizontalLayoutCollectionSelector->addWidget(createCollectionButton);
+    tabCollectionsUI.createCollectionButton = new QPushButton("Создать коллекцию", tabCollectionsUI.tabCollections);
+    tabCollectionsUI.horizontalLayoutCollectionSelector->addWidget(tabCollectionsUI.createCollectionButton);
     
-    manageCollectionsButton = new QPushButton("Удалить коллекцию", tabCollections);
-    horizontalLayoutCollectionSelector->addWidget(manageCollectionsButton);
+    tabCollectionsUI.manageCollectionsButton = new QPushButton("Удалить коллекцию", tabCollectionsUI.tabCollections);
+    tabCollectionsUI.horizontalLayoutCollectionSelector->addWidget(tabCollectionsUI.manageCollectionsButton);
     
-    horizontalLayoutCollectionSelector->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+    tabCollectionsUI.horizontalLayoutCollectionSelector->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
     
-    verticalLayoutCollections->addLayout(horizontalLayoutCollectionSelector);
+    tabCollectionsUI.verticalLayoutCollections->addLayout(tabCollectionsUI.horizontalLayoutCollectionSelector);
     
-    scrollAreaCollections = new QScrollArea(tabCollections);
-    scrollAreaCollections->setWidgetResizable(true);
-    scrollAreaCollections->setFrameShape(QFrame::NoFrame);
+    tabCollectionsUI.scrollAreaCollections = new QScrollArea(tabCollectionsUI.tabCollections);
+    tabCollectionsUI.scrollAreaCollections->setWidgetResizable(true);
+    tabCollectionsUI.scrollAreaCollections->setFrameShape(QFrame::NoFrame);
     
-    scrollAreaWidgetContentsCollections = new QWidget();
-    scrollAreaWidgetContentsCollections->setGeometry(0, 0, 1062, 617);
-    gridLayoutCollections = new QGridLayout(scrollAreaWidgetContentsCollections);
-    gridLayoutCollections->setContentsMargins(10, 10, 10, 10);
-    gridLayoutCollections->setSpacing(10);
+    tabCollectionsUI.scrollAreaWidgetContentsCollections = new QWidget();
+    tabCollectionsUI.scrollAreaWidgetContentsCollections->setGeometry(0, 0, 1062, 617);
+    tabCollectionsUI.gridLayoutCollections = new QGridLayout(tabCollectionsUI.scrollAreaWidgetContentsCollections);
+    tabCollectionsUI.gridLayoutCollections->setContentsMargins(10, 10, 10, 10);
+    tabCollectionsUI.gridLayoutCollections->setSpacing(10);
     
-    scrollAreaCollections->setWidget(scrollAreaWidgetContentsCollections);
-    verticalLayoutCollections->addWidget(scrollAreaCollections);
+    tabCollectionsUI.scrollAreaCollections->setWidget(tabCollectionsUI.scrollAreaWidgetContentsCollections);
+    tabCollectionsUI.verticalLayoutCollections->addWidget(tabCollectionsUI.scrollAreaCollections);
     
-    tabWidget->addTab(tabCollections, "Коллекции");
+    tabWidget->addTab(tabCollectionsUI.tabCollections, "Коллекции");
     
     mainLayout->addWidget(tabWidget, 1);
     
-    mainToolBar = addToolBar("mainToolBar");
+    toolBarUI.mainToolBar = addToolBar("mainToolBar");
     
-    actionHome = new QAction("Главная", this);
-    mainToolBar->addAction(actionHome);
+    toolBarUI.actionHome = new QAction("Главная", this);
+    toolBarUI.mainToolBar->addAction(toolBarUI.actionHome);
     
-    actionSortByRating = new QAction("Сортировать по рейтингу", this);
-    mainToolBar->addAction(actionSortByRating);
+    toolBarUI.actionSortByRating = new QAction("Сортировать по рейтингу", this);
+    toolBarUI.mainToolBar->addAction(toolBarUI.actionSortByRating);
     
-    actionTopN = new QAction("Показать топ N", this);
-    mainToolBar->addAction(actionTopN);
+    toolBarUI.actionTopN = new QAction("Показать топ N", this);
+    toolBarUI.mainToolBar->addAction(toolBarUI.actionTopN);
     
 
     statusbar = statusBar();
@@ -265,8 +265,8 @@ void MainWindow::setupModelsAndViews() {
 }
 
 void MainWindow::populateGenres() {
-    genreComboBox->clear();
-    genreComboBox->addItem("");
+    searchUI.genreComboBox->clear();
+    searchUI.genreComboBox->addItem("");
     QSet<QString> genres;
     for (const auto& m : manager.getAllMovies()) {
         const auto& movieGenres = m.getGenres();
@@ -276,7 +276,7 @@ void MainWindow::populateGenres() {
     }
     QStringList sorted = QStringList(genres.begin(), genres.end());
     sorted.sort(Qt::CaseInsensitive);
-    genreComboBox->addItems(sorted);
+    searchUI.genreComboBox->addItems(sorted);
 }
 
 void MainWindow::showMovieInfo(const Movie& movie) {
@@ -300,7 +300,7 @@ void MainWindow::showMovieInfo(const Movie& movie) {
         posterLabel->setMaximumSize(450, 675);
         posterLabel->setAlignment(Qt::AlignCenter);
         posterLabel->setStyleSheet("border: 1px solid #555; border-radius: 4px; background-color: #3a3a3a;");
-    posterManager->loadPosterToLabel(posterLabel, movie);
+    managers.posterManager->loadPosterToLabel(posterLabel, movie);
         mainLayout->addWidget(posterLabel);
         
         auto* infoLayout = new QVBoxLayout();
@@ -404,7 +404,7 @@ void MainWindow::populateGridLayoutWithMovies(QGridLayout* layout, QWidget* pare
     int col = 0;
     
     for (const auto& movie : movies) {
-        QWidget* card = cardFactory->createMovieCard(movie, parent);
+        QWidget* card = managers.cardFactory->createMovieCard(movie, parent);
         if (card) {
             layout->addWidget(card, row, col);
             
@@ -418,26 +418,26 @@ void MainWindow::populateGridLayoutWithMovies(QGridLayout* layout, QWidget* pare
 }
 
 void MainWindow::populateAllMovies(const std::vector<Movie>& movies) {
-    populateGridLayoutWithMovies(gridLayoutMovies, scrollAreaWidgetContentsAll, movies);
+    populateGridLayoutWithMovies(tabAllUI.gridLayoutMovies, tabAllUI.scrollAreaWidgetContentsAll, movies);
 }
 
 void MainWindow::populateFavorites() {
     auto favs = manager.getFavoriteMovies();
-    populateGridLayoutWithMovies(gridLayoutFavorites, scrollAreaWidgetContentsFavorites, favs);
+    populateGridLayoutWithMovies(tabFavoritesUI.gridLayoutFavorites, tabFavoritesUI.scrollAreaWidgetContentsFavorites, favs);
 }
 
 void MainWindow::populateCollections() {
-    collectionComboBox->clear();
+    tabCollectionsUI.collectionComboBox->clear();
     auto collectionNames = manager.getAllCollectionNames();
     
     for (const auto& name : collectionNames) {
-        collectionComboBox->addItem(QString::fromUtf8(name.c_str(), name.length()));
+        tabCollectionsUI.collectionComboBox->addItem(QString::fromUtf8(name.c_str(), name.length()));
     }
     
-    if (collectionComboBox->count() > 0) {
+    if (tabCollectionsUI.collectionComboBox->count() > 0) {
         handleCollectionChanged();
     } else {
-        clearGridLayout(gridLayoutCollections);
+        clearGridLayout(tabCollectionsUI.gridLayoutCollections);
     }
 }
 
@@ -494,12 +494,12 @@ void MainWindow::handleAddMovieToFile(const Movie& movie) {
 }
 
 void MainWindow::handleCollectionChanged() {
-    if (!gridLayoutCollections) {
+    if (!tabCollectionsUI.gridLayoutCollections) {
         return;
     }
-    QString collectionName = collectionComboBox->currentText();
+    QString collectionName = tabCollectionsUI.collectionComboBox->currentText();
     if (collectionName.isEmpty()) {
-        clearGridLayout(gridLayoutCollections);
+        clearGridLayout(tabCollectionsUI.gridLayoutCollections);
         return;
     }
     
@@ -514,12 +514,12 @@ void MainWindow::handleCollectionChanged() {
     }
     
     auto movies = collection->getMovies();
-    populateGridLayoutWithMovies(gridLayoutCollections, scrollAreaWidgetContentsCollections, movies);
+    populateGridLayoutWithMovies(tabCollectionsUI.gridLayoutCollections, tabCollectionsUI.scrollAreaWidgetContentsCollections, movies);
 }
 
 void MainWindow::handleSearch() {
-    const QString title = searchLineEdit->text().trimmed();
-    const QString genre = genreComboBox->currentText().trimmed();
+    const QString title = searchUI.searchLineEdit->text().trimmed();
+    const QString genre = searchUI.genreComboBox->currentText().trimmed();
 
     try {
         std::vector<Movie> filtered = manager.getAllMovies();
@@ -611,7 +611,7 @@ void MainWindow::handleAddMovie() {
             return;
         }
         
-        apiClient->searchMovie(title, 
+        managers.apiClient->searchMovie(title, 
         [this](const Movie& movie, const QString& posterUrl) {
         if (movie.getId() == 0) {
             statusbar->showMessage("Фильм не найден", 3000);
@@ -645,7 +645,7 @@ void MainWindow::handleAddMovie() {
 
             if (!posterUrl.isEmpty()) {
                 statusbar->showMessage("Загрузка постера...", 0);
-                posterManager->downloadPoster(posterUrl, savePath, [this, movie, posterDir, sep, movieId = movie.getId()](bool success) {
+                managers.posterManager->downloadPoster(posterUrl, savePath, [this, movie, posterDir, sep, movieId = movie.getId()](bool success) {
                     Movie movieToAdd = movie;
                     QString relativePath = "";
 

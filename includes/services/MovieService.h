@@ -24,7 +24,7 @@ public:
     std::vector<Movie> searchByTitle(const std::string& title) const;
     std::vector<Movie> searchByGenre(const std::string& genre) const;
     std::vector<Movie> topRated(int count = 10) const;
-    std::set<std::string> getAllGenres() const;
+    std::set<std::string, std::less<>> getAllGenres() const;
     
     void addMovie(const Movie& movie);
     void removeMovie(int movieId);

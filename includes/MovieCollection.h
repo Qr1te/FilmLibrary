@@ -120,7 +120,7 @@ void sortMoviesByRating(Container& movies) {
 
 class CollectionManager {
 private:
-    std::map<std::string, std::unique_ptr<MovieCollection>> collections;
+    std::map<std::string, std::unique_ptr<MovieCollection>, std::less<>> collections;
     const std::vector<Movie>* allMoviesRef;
     std::string collectionsDirectory;
     

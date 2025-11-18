@@ -13,7 +13,7 @@ class CollectionService {
 private:
     CollectionRepository repository;
     MovieService* movieService;
-    std::map<std::string, std::unique_ptr<MovieCollection>> collections;
+    std::map<std::string, std::unique_ptr<MovieCollection>, std::less<>> collections;
     
 public:
     explicit CollectionService(MovieService* movieService, const std::string& dir = "collections/");

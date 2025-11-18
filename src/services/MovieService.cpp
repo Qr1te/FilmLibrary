@@ -82,8 +82,8 @@ std::vector<Movie> MovieService::topRated(int count) const {
     return sortedMovies;
 }
 
-std::set<std::string> MovieService::getAllGenres() const {
-    std::set<std::string> genres;
+std::set<std::string, std::less<>> MovieService::getAllGenres() const {
+    std::set<std::string, std::less<>> genres;
     for (const auto& movie : movies) {
         const auto& movieGenres = movie.getGenres();
         for (const auto& genre : movieGenres) {

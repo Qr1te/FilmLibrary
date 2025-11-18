@@ -66,62 +66,70 @@ private:
     void handleAddMovieToFile(const Movie& movie);
 
 private:
+    struct SearchUI {
+        QHBoxLayout* searchLayout;
+        QPushButton* addMovieButton;
+        QLineEdit* searchLineEdit;
+        QComboBox* genreComboBox;
+        QPushButton* searchButton;
+    };
+
+    struct TabAllUI {
+        QWidget* tabAll;
+        QVBoxLayout* verticalLayoutAll;
+        QScrollArea* scrollAreaAll;
+        QWidget* scrollAreaWidgetContentsAll;
+        QGridLayout* gridLayoutMovies;
+    };
+
+    struct TabFavoritesUI {
+        QWidget* tabFavorites;
+        QVBoxLayout* verticalLayoutFav;
+        QScrollArea* scrollAreaFavorites;
+        QWidget* scrollAreaWidgetContentsFavorites;
+        QGridLayout* gridLayoutFavorites;
+    };
+
+    struct TabCollectionsUI {
+        QWidget* tabCollections;
+        QVBoxLayout* verticalLayoutCollections;
+        QHBoxLayout* horizontalLayoutCollectionSelector;
+        QLabel* collectionLabel;
+        QComboBox* collectionComboBox;
+        QPushButton* createCollectionButton;
+        QPushButton* manageCollectionsButton;
+        QScrollArea* scrollAreaCollections;
+        QWidget* scrollAreaWidgetContentsCollections;
+        QGridLayout* gridLayoutCollections;
+    };
+
+    struct ToolBarUI {
+        QToolBar* mainToolBar;
+        QAction* actionHome;
+        QAction* actionSortByRating;
+        QAction* actionTopN;
+    };
+
+    struct Managers {
+        QNetworkAccessManager* networkManager;
+        KinopoiskAPIClient* apiClient;
+        PosterManager* posterManager;
+        MovieCardFactory* cardFactory;
+    };
 
     QWidget* centralWidget;
     QVBoxLayout* mainLayout;
-    
-
-    QHBoxLayout* searchLayout;
-    QPushButton* addMovieButton;
-    QLineEdit* searchLineEdit;
-    QComboBox* genreComboBox;
-    QPushButton* searchButton;
-    
-
     QTabWidget* tabWidget;
-    
-
-    QWidget* tabAll;
-    QVBoxLayout* verticalLayoutAll;
-    QScrollArea* scrollAreaAll;
-    QWidget* scrollAreaWidgetContentsAll;
-    QGridLayout* gridLayoutMovies;
-    
-
-    QWidget* tabFavorites;
-    QVBoxLayout* verticalLayoutFav;
-    QScrollArea* scrollAreaFavorites;
-    QWidget* scrollAreaWidgetContentsFavorites;
-    QGridLayout* gridLayoutFavorites;
-    
-
-    QWidget* tabCollections;
-    QVBoxLayout* verticalLayoutCollections;
-    QHBoxLayout* horizontalLayoutCollectionSelector;
-    QLabel* collectionLabel;
-    QComboBox* collectionComboBox;
-    QPushButton* createCollectionButton;
-    QPushButton* manageCollectionsButton;
-    QScrollArea* scrollAreaCollections;
-    QWidget* scrollAreaWidgetContentsCollections;
-    QGridLayout* gridLayoutCollections;
-    
-
-    QToolBar* mainToolBar;
-    QAction* actionHome;
-    QAction* actionSortByRating;
-    QAction* actionTopN;
-    
-
     QStatusBar* statusbar;
-    
-
     MovieManager manager;
     bool isSortedByRating;
-    QNetworkAccessManager* networkManager;
-    KinopoiskAPIClient* apiClient;
-    PosterManager* posterManager;
-    MovieCardFactory* cardFactory;
+    
+    SearchUI searchUI;
+    TabAllUI tabAllUI;
+    TabFavoritesUI tabFavoritesUI;
+    TabCollectionsUI tabCollectionsUI;
+    ToolBarUI toolBarUI;
+    Managers managers;
 };
 
 #endif

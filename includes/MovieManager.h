@@ -48,7 +48,7 @@ public:
     std::vector<Movie> topRatedResults(int count = 10) const;
     const Movie* findMovieById(int id) const;
     
-    std::set<std::string> getAllGenres() const;
+    std::set<std::string, std::less<>> getAllGenres() const;
     
     CollectionManager* getCollectionManager();
     const CollectionManager* getCollectionManager() const;
