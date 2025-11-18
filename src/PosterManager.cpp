@@ -150,9 +150,8 @@ QString PosterManager::findPosterFile(int movieId, const QString& posterPath) {
 
 QString PosterManager::findPosterFileByTitle(const QString& movieTitle) {
     QStringList searchDirs = getSearchDirectories();
-    QStringList validDirs = getValidDirectories(searchDirs);
     
-    if (!validDirs.isEmpty()) {
+    if (QStringList validDirs = getValidDirectories(searchDirs); !validDirs.isEmpty()) {
         for (const QString& dir : validDirs) {
             QDir searchDir(dir);
             QFileInfoList files = searchDir.entryInfoList(QStringList() << "*.png" << "*.jpg" << "*.jpeg", QDir::Files);
@@ -217,9 +216,7 @@ void PosterManager::loadPosterToLabel(QLabel* label, const Movie& movie) {
     QString posterPath = QString::fromStdString(movie.getPosterPath());
     int movieId = movie.getId();
     
-    QString fullPath = findPosterFile(movieId, posterPath);
-    
-    if (!fullPath.isEmpty()) {
+    if (QString fullPath = findPosterFile(movieId, posterPath); !fullPath.isEmpty()) {
         fullPath = normalizePath(fullPath);
         
         if (QFile::exists(fullPath)) {
@@ -236,9 +233,7 @@ void PosterManager::loadPosterToLabel(QLabel* label, const Movie& movie) {
 void PosterManager::loadPosterToLabelByTitle(QLabel* label, const QString& movieTitle) {
     if (!label) return;
     
-    QString fullPath = findPosterFileByTitle(movieTitle);
-    
-    if (!fullPath.isEmpty()) {
+    if (QString fullPath = findPosterFileByTitle(movieTitle); !fullPath.isEmpty()) {
         fullPath = normalizePath(fullPath);
         
         if (QFile::exists(fullPath)) {
@@ -278,7 +273,7 @@ void PosterManager::downloadPoster(const QString& posterUrl, const QString& save
     
     QNetworkReply* reply = networkManager->get(request);
     
-    connect(reply, &QNetworkReply::finished, [this, reply, savePath, callback, posterUrl]() {
+    connect(reply, &QNetworkReply::finished, [reply, savePath, callback]() {
         bool success = false;
         
         if (reply->error() == QNetworkReply::NoError) {
@@ -320,8 +315,7 @@ void PosterManager::downloadPoster(const QString& posterUrl, const QString& save
                 QString sep = QDir::separator();
                 QString correctPath = pathInfo.path() + sep + pathInfo.baseName() + "." + fileExtension;
                 
-                QFile file(correctPath);
-                if (file.open(QIODevice::WriteOnly)) {
+                if (QFile file(correctPath); file.open(QIODevice::WriteOnly)) {
                     qint64 bytesWritten = file.write(imageData);
                     file.close();
                     
