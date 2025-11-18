@@ -190,134 +190,7 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     });
 
     QObject::connect(moreBtn, &QPushButton::clicked, [this, movie, moreBtn]() {
-        QMenu menu;
-        const QAction* addToCollectionAction = const_cast<const QAction*>(menu.addAction("Добавить в коллекцию"));
-        
-        auto* collManager = movieManager->getCollectionManager();
-        QStringList collectionsWithMovie;
-        if (collManager) {
-            auto allCollections = movieManager->getAllCollectionNames();
-            for (const auto& name : allCollections) {
-                const MovieCollection* collection = const_cast<const CollectionManager*>(collManager)->getCollection(name);
-                if (collection && collection->containsMovie(movie.getId())) {
-                    collectionsWithMovie << QString::fromUtf8(name.c_str(), name.length());
-                }
-            }
-        }
-        
-        const QAction* removeFromCollectionAction = nullptr;
-        if (!collectionsWithMovie.isEmpty()) {
-            menu.addSeparator();
-            removeFromCollectionAction = const_cast<const QAction*>(menu.addAction("Удалить из коллекции"));
-        }
-        
-        menu.addSeparator();
-        const QAction* deleteMovieAction = const_cast<const QAction*>(menu.addAction("Удалить фильм"));
-        
-        const QAction* selectedAction = const_cast<const QAction*>(menu.exec(moreBtn->mapToGlobal(QPoint(0, moreBtn->height()))));
-        
-        if (selectedAction == addToCollectionAction) {
-            auto collections = movieManager->getAllCollectionNames();
-            if (collections.empty()) {
-                QMessageBox::information(nullptr, "Коллекции", "Сначала создайте коллекцию через меню.");
-            } else {
-                QStringList items;
-                for (const auto& name : collections) {
-                    items << QString::fromUtf8(name.c_str(), name.length());
-                }
-                bool ok;
-                QString selected = QInputDialog::getItem(nullptr, "Выбор коллекции",
-                                                        "Выберите коллекцию:", items, 0, false, &ok);
-                if (ok && !selected.isEmpty()) {
-                    if (collManager) {
-                        MovieCollection* collection = collManager->getCollection(qStringToStdString(selected));
-                        if (collection) {
-                            try {
-                                collection->addMovie(movie);
-                                QMessageBox::information(nullptr, "Успех", 
-                                    QString("Фильм добавлен в коллекцию '%1'").arg(selected));
-                                if (onCollectionsChanged) onCollectionsChanged();
-                            } catch (const DuplicateFavoriteException& e) {
-                                handleCollectionException(e);
-                            } catch (const MovieNotFoundException& e) {
-                                handleCollectionException(e);
-                            } catch (const MovieException& e) {
-                                handleCollectionException(e);
-                            }
-                        }
-                    }
-                }
-            }
-        } else if (selectedAction == removeFromCollectionAction) {
-            if (collectionsWithMovie.size() == 1) {
-                QString collectionName = collectionsWithMovie.first();
-                if (collManager) {
-                    MovieCollection* collection = collManager->getCollection(qStringToStdString(collectionName));
-                    if (collection) {
-                        try {
-                            collection->removeMovie(movie.getId());
-                            QMessageBox::information(nullptr, "Успех", 
-                                QString("Фильм удален из коллекции '%1'").arg(collectionName));
-                            if (onCollectionsChanged) onCollectionsChanged();
-                        } catch (const MovieNotFoundException& e) {
-                            handleCollectionException(e);
-                        } catch (const MovieException& e) {
-                            handleCollectionException(e);
-                        }
-                    }
-                }
-            } else {
-                bool ok;
-                QString selected = QInputDialog::getItem(nullptr, "Удаление из коллекции",
-                                                        "Выберите коллекцию, из которой удалить фильм:", 
-                                                        collectionsWithMovie, 0, false, &ok);
-                if (ok && !selected.isEmpty()) {
-                    if (collManager) {
-                        MovieCollection* collection = collManager->getCollection(qStringToStdString(selected));
-                        if (collection) {
-                            try {
-                                collection->removeMovie(movie.getId());
-                                QMessageBox::information(nullptr, "Успех", 
-                                    QString("Фильм удален из коллекции '%1'").arg(selected));
-                                if (onCollectionsChanged) onCollectionsChanged();
-                            } catch (const DuplicateFavoriteException& e) {
-                                handleCollectionException(e);
-                            } catch (const MovieNotFoundException& e) {
-                                handleCollectionException(e);
-                            } catch (const MovieException& e) {
-                                handleCollectionException(e);
-                            }
-                        }
-                    }
-                }
-            }
-        } else if (selectedAction == deleteMovieAction) {
-            int ret = QMessageBox::question(nullptr, "Удаление фильма",
-                                            QString("Вы уверены, что хотите удалить '%1'?\n\nЭто действие нельзя отменить.")
-                                            .arg(QString::fromStdString(movie.getTitle())),
-                                            QMessageBox::Yes | QMessageBox::No,
-                                            QMessageBox::No);
-            
-            if (ret == QMessageBox::Yes) {
-                try {
-                    int movieId = movie.getId();
-                    movieManager->removeMovie(movieId);
-                    movieManager->reloadMovies();
-                    
-                    if (onMoviesChanged) onMoviesChanged();
-                    if (onGenresChanged) onGenresChanged();
-                    
-                    if (statusBar) {
-                        statusBar->showMessage(QString("Фильм '%1' успешно удален")
-                                              .arg(QString::fromStdString(movie.getTitle())), 3000);
-                    }
-                } catch (const MovieNotFoundException& e) {
-                    QMessageBox::warning(nullptr, "Ошибка", QString("Не удалось удалить фильм: %1").arg(e.what()));
-                } catch (const MovieException& e) {
-                    QMessageBox::warning(nullptr, "Ошибка", QString("Не удалось удалить фильм: %1").arg(e.what()));
-                }
-            }
-        }
+        handleMoreButtonClicked(movie, moreBtn);
     });
 
     QObject::connect(infoBtn, &QPushButton::clicked, [this, movie]() {
@@ -327,5 +200,138 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     });
 
     return card;
+}
+
+void MovieCardFactory::handleMoreButtonClicked(const Movie& movie, QPushButton* moreBtn) {
+    QMenu menu;
+    auto addToCollectionAction = const_cast<const QAction*>(menu.addAction("Добавить в коллекцию"));
+    
+    auto* collManager = movieManager->getCollectionManager();
+    QStringList collectionsWithMovie;
+    if (collManager) {
+        auto allCollections = movieManager->getAllCollectionNames();
+        for (const auto& name : allCollections) {
+            const MovieCollection* collection = const_cast<const CollectionManager*>(collManager)->getCollection(name);
+            if (collection && collection->containsMovie(movie.getId())) {
+                collectionsWithMovie << QString::fromUtf8(name.c_str(), name.length());
+            }
+        }
+    }
+    
+    const QAction* removeFromCollectionAction = nullptr;
+    if (!collectionsWithMovie.isEmpty()) {
+        menu.addSeparator();
+        removeFromCollectionAction = const_cast<const QAction*>(menu.addAction("Удалить из коллекции"));
+    }
+    
+    menu.addSeparator();
+    auto deleteMovieAction = const_cast<const QAction*>(menu.addAction("Удалить фильм"));
+    
+    auto selectedAction = const_cast<const QAction*>(menu.exec(moreBtn->mapToGlobal(QPoint(0, moreBtn->height()))));
+    
+    if (selectedAction == addToCollectionAction) {
+        handleAddToCollection(movie, moreBtn);
+    } else if (selectedAction == removeFromCollectionAction) {
+        handleRemoveFromCollection(movie, collectionsWithMovie);
+    } else if (selectedAction == deleteMovieAction) {
+        handleDeleteMovie(movie);
+    }
+}
+
+void MovieCardFactory::handleAddToCollection(const Movie& movie, QPushButton* moreBtn) {
+    auto collections = movieManager->getAllCollectionNames();
+    if (collections.empty()) {
+        QMessageBox::information(nullptr, "Коллекции", "Сначала создайте коллекцию через меню.");
+        return;
+    }
+    
+    QStringList items;
+    for (const auto& name : collections) {
+        items << QString::fromUtf8(name.c_str(), name.length());
+    }
+    bool ok;
+    QString selected = QInputDialog::getItem(nullptr, "Выбор коллекции",
+                                            "Выберите коллекцию:", items, 0, false, &ok);
+    if (!ok || selected.isEmpty()) {
+        return;
+    }
+    
+    auto* collManager = movieManager->getCollectionManager();
+    if (auto* collection = collManager ? collManager->getCollection(qStringToStdString(selected)) : nullptr; collection) {
+        try {
+            collection->addMovie(movie);
+            QMessageBox::information(nullptr, "Успех", 
+                QString("Фильм добавлен в коллекцию '%1'").arg(selected));
+            if (onCollectionsChanged) onCollectionsChanged();
+        } catch (const DuplicateFavoriteException& e) {
+            handleCollectionException(e);
+        } catch (const MovieNotFoundException& e) {
+            handleCollectionException(e);
+        } catch (const MovieException& e) {
+            handleCollectionException(e);
+        }
+    }
+}
+
+void MovieCardFactory::handleRemoveFromCollection(const Movie& movie, const QStringList& collectionsWithMovie) {
+    QString collectionName;
+    if (collectionsWithMovie.size() == 1) {
+        collectionName = collectionsWithMovie.first();
+    } else {
+        bool ok;
+        QString selected = QInputDialog::getItem(nullptr, "Удаление из коллекции",
+                                                "Выберите коллекцию, из которой удалить фильм:", 
+                                                collectionsWithMovie, 0, false, &ok);
+        if (!ok || selected.isEmpty()) {
+            return;
+        }
+        collectionName = selected;
+    }
+    
+    auto* collManager = movieManager->getCollectionManager();
+    if (auto* collection = collManager ? collManager->getCollection(qStringToStdString(collectionName)) : nullptr; collection) {
+        try {
+            collection->removeMovie(movie.getId());
+            QMessageBox::information(nullptr, "Успех", 
+                QString("Фильм удален из коллекции '%1'").arg(collectionName));
+            if (onCollectionsChanged) onCollectionsChanged();
+        } catch (const DuplicateFavoriteException& e) {
+            handleCollectionException(e);
+        } catch (const MovieNotFoundException& e) {
+            handleCollectionException(e);
+        } catch (const MovieException& e) {
+            handleCollectionException(e);
+        }
+    }
+}
+
+void MovieCardFactory::handleDeleteMovie(const Movie& movie) {
+    int ret = QMessageBox::question(nullptr, "Удаление фильма",
+                                    QString("Вы уверены, что хотите удалить '%1'?\n\nЭто действие нельзя отменить.")
+                                    .arg(QString::fromStdString(movie.getTitle())),
+                                    QMessageBox::Yes | QMessageBox::No,
+                                    QMessageBox::No);
+    
+    if (ret != QMessageBox::Yes) {
+        return;
+    }
+    
+    try {
+        int movieId = movie.getId();
+        movieManager->removeMovie(movieId);
+        movieManager->reloadMovies();
+        
+        if (onMoviesChanged) onMoviesChanged();
+        if (onGenresChanged) onGenresChanged();
+        
+        if (statusBar) {
+            statusBar->showMessage(QString("Фильм '%1' успешно удален")
+                                  .arg(QString::fromStdString(movie.getTitle())), 3000);
+        }
+    } catch (const MovieNotFoundException& e) {
+        QMessageBox::warning(nullptr, "Ошибка", QString("Не удалось удалить фильм: %1").arg(e.what()));
+    } catch (const MovieException& e) {
+        QMessageBox::warning(nullptr, "Ошибка", QString("Не удалось удалить фильм: %1").arg(e.what()));
+    }
 }
 

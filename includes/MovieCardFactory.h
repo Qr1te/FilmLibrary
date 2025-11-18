@@ -2,12 +2,14 @@
 #define BETA2_MOVIECARDFACTORY_H
 
 #include <QWidget>
+#include <QStringList>
 #include <vector>
 #include "movie.h"
 
 class MovieManager;
 class PosterManager;
 class QStatusBar;
+class QPushButton;
 
 class MovieCardFactory {
 public:
@@ -24,6 +26,10 @@ public:
 private:
     void handleCollectionException(const std::exception& e) const;
     std::string qStringToStdString(const QString& str) const;
+    void handleMoreButtonClicked(const Movie& movie, QPushButton* moreBtn);
+    void handleAddToCollection(const Movie& movie, QPushButton* moreBtn);
+    void handleRemoveFromCollection(const Movie& movie, const QStringList& collectionsWithMovie);
+    void handleDeleteMovie(const Movie& movie);
     
     MovieManager* movieManager;
     PosterManager* posterManager;
