@@ -131,8 +131,7 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     auto* favoriteBtn = new QPushButton("★");
     favoriteBtn->setFixedSize(35, 35);
     favoriteBtn->setToolTip("Добавить в избранное");
-    bool isFav = movieManager->isFavorite(movie.getId());
-    if (isFav) {
+    if (bool isFav = movieManager->isFavorite(movie.getId()); isFav) {
         favoriteBtn->setStyleSheet("background-color: #ffd700; color: #000; font-size: 18px; font-weight: bold; border-radius: 4px; border: none;");
     } else {
         favoriteBtn->setStyleSheet("background-color: #555; color: #ccc; font-size: 18px; border-radius: 4px; border: 1px solid #777;");
@@ -192,30 +191,30 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
 
     QObject::connect(moreBtn, &QPushButton::clicked, [this, movie, moreBtn]() {
         QMenu menu;
-        QAction* addToCollectionAction = menu.addAction("Добавить в коллекцию");
+        const QAction* addToCollectionAction = const_cast<const QAction*>(menu.addAction("Добавить в коллекцию"));
         
         auto* collManager = movieManager->getCollectionManager();
         QStringList collectionsWithMovie;
         if (collManager) {
             auto allCollections = movieManager->getAllCollectionNames();
             for (const auto& name : allCollections) {
-                MovieCollection* collection = collManager->getCollection(name);
+                const MovieCollection* collection = const_cast<const CollectionManager*>(collManager)->getCollection(name);
                 if (collection && collection->containsMovie(movie.getId())) {
                     collectionsWithMovie << QString::fromUtf8(name.c_str(), name.length());
                 }
             }
         }
         
-        QAction* removeFromCollectionAction = nullptr;
+        const QAction* removeFromCollectionAction = nullptr;
         if (!collectionsWithMovie.isEmpty()) {
             menu.addSeparator();
-            removeFromCollectionAction = menu.addAction("Удалить из коллекции");
+            removeFromCollectionAction = const_cast<const QAction*>(menu.addAction("Удалить из коллекции"));
         }
         
         menu.addSeparator();
-        QAction* deleteMovieAction = menu.addAction("Удалить фильм");
+        const QAction* deleteMovieAction = const_cast<const QAction*>(menu.addAction("Удалить фильм"));
         
-        QAction* selectedAction = menu.exec(moreBtn->mapToGlobal(QPoint(0, moreBtn->height())));
+        const QAction* selectedAction = const_cast<const QAction*>(menu.exec(moreBtn->mapToGlobal(QPoint(0, moreBtn->height()))));
         
         if (selectedAction == addToCollectionAction) {
             auto collections = movieManager->getAllCollectionNames();
