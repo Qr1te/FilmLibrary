@@ -41,15 +41,15 @@ Movie MovieJsonParser::parseMovieFromJSON(const QJsonObject& json) {
             QString professionRu = person["profession"].toString();
             
             if (profession == "director" || professionRu == "режиссер" || professionRu.contains("режиссер", Qt::CaseInsensitive)) {
-                QString name = person["name"].toString();
-                if (name.isEmpty()) {
-                    name = person["enName"].toString();
+                QString personName = person["name"].toString();
+                if (personName.isEmpty()) {
+                    personName = person["enName"].toString();
                 }
-                if (name.isEmpty()) {
-                    name = person["alternativeName"].toString();
+                if (personName.isEmpty()) {
+                    personName = person["alternativeName"].toString();
                 }
-                if (!name.isEmpty()) {
-                    director = name;
+                if (!personName.isEmpty()) {
+                    director = personName;
                     break;
                 }
             }
@@ -107,12 +107,12 @@ Movie MovieJsonParser::parseMovieFromJSON(const QJsonObject& json) {
                     countries << value.toString();
                 } else if (value.isObject()) {
                     QJsonObject countryObj = value.toObject();
-                    QString name = countryObj["name"].toString();
-                    if (name.isEmpty()) {
-                        name = countryObj["enName"].toString();
+                    QString countryName = countryObj["name"].toString();
+                    if (countryName.isEmpty()) {
+                        countryName = countryObj["enName"].toString();
                     }
-                    if (!name.isEmpty()) {
-                        countries << name;
+                    if (!countryName.isEmpty()) {
+                        countries << countryName;
                     }
                 }
             }
@@ -132,9 +132,9 @@ Movie MovieJsonParser::parseMovieFromJSON(const QJsonObject& json) {
             QJsonArray countriesArray = productionCountries.toArray();
             for (const QJsonValue& value : countriesArray) {
                 if (value.isObject()) {
-                    QString name = value.toObject()["name"].toString();
-                    if (!name.isEmpty()) {
-                        countries << name;
+                    QString countryName = value.toObject()["name"].toString();
+                    if (!countryName.isEmpty()) {
+                        countries << countryName;
                     }
                 } else if (value.isString()) {
                     countries << value.toString();
@@ -164,21 +164,21 @@ Movie MovieJsonParser::parseMovieFromJSON(const QJsonObject& json) {
                            professionRu.contains("actor", Qt::CaseInsensitive));
             
             if (isActor && count < 5) {
-                QString name = person["name"].toString();
-                if (name.isEmpty()) {
-                    name = person["enName"].toString();
+                QString actorName = person["name"].toString();
+                if (actorName.isEmpty()) {
+                    actorName = person["enName"].toString();
                 }
-                if (name.isEmpty()) {
-                    name = person["alternativeName"].toString();
+                if (actorName.isEmpty()) {
+                    actorName = person["alternativeName"].toString();
                 }
-                if (name.isEmpty() && person.contains("names")) {
+                if (actorName.isEmpty() && person.contains("names")) {
                     QJsonArray namesArray = person["names"].toArray();
                     if (!namesArray.isEmpty()) {
-                        name = namesArray[0].toObject()["name"].toString();
+                        actorName = namesArray[0].toObject()["name"].toString();
                     }
                 }
-                if (!name.isEmpty()) {
-                    actorsList << name;
+                if (!actorName.isEmpty()) {
+                    actorsList << actorName;
                     count++;
                 }
             }
@@ -197,12 +197,12 @@ Movie MovieJsonParser::parseMovieFromJSON(const QJsonObject& json) {
                     actorsList << value.toString();
                 } else if (value.isObject()) {
                     QJsonObject actorObj = value.toObject();
-                    QString name = actorObj["name"].toString();
-                    if (name.isEmpty()) {
-                        name = actorObj["enName"].toString();
+                    QString actorName = actorObj["name"].toString();
+                    if (actorName.isEmpty()) {
+                        actorName = actorObj["enName"].toString();
                     }
-                    if (!name.isEmpty()) {
-                        actorsList << name;
+                    if (!actorName.isEmpty()) {
+                        actorsList << actorName;
                     }
                 }
                 if (actorsList.size() >= 5) break;
@@ -218,12 +218,12 @@ Movie MovieJsonParser::parseMovieFromJSON(const QJsonObject& json) {
             for (const QJsonValue& value : castArray) {
                 if (value.isObject()) {
                     QJsonObject castObj = value.toObject();
-                    QString name = castObj["name"].toString();
-                    if (name.isEmpty()) {
-                        name = castObj["character"].toString();
+                    QString actorName = castObj["name"].toString();
+                    if (actorName.isEmpty()) {
+                        actorName = castObj["character"].toString();
                     }
-                    if (!name.isEmpty()) {
-                        actorsList << name;
+                    if (!actorName.isEmpty()) {
+                        actorsList << actorName;
                     }
                 }
                 if (actorsList.size() >= 5) break;
