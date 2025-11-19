@@ -184,7 +184,7 @@ void MovieManager::addMovieToFile(const Movie& movie) {
     collectionService->updateMoviesReference();
 }
 
-void MovieManager::saveMovies() {
+void MovieManager::saveMovies() const {
     movieService->save();
 }
 

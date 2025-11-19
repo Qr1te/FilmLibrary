@@ -1,9 +1,10 @@
 #include "../../includes/exceptions/MovieNotFoundException.h"
+#include <format>
 
 MovieNotFoundException::MovieNotFoundException(int id)
-    : MovieException("Movie with ID " + std::to_string(id) + " not found") {}
+    : MovieException(std::format("Movie with ID {} not found", id)) {}
 
 MovieNotFoundException::MovieNotFoundException(const std::string& criteria)
-    : MovieException("Movie not found with criteria: " + criteria) {}
+    : MovieException(std::format("Movie not found with criteria: {}", criteria)) {}
 
 

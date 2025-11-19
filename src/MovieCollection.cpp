@@ -36,7 +36,7 @@ void MovieCollection::validateCollectionName(std::string_view name) const {
     
     std::string invalidChars = R"(<>:"|?*\/)";
     for (char c : invalidChars) {
-        if (name.find(c) != std::string_view::npos) {
+        if (name.contains(c)) {
             throw InvalidInputException("Collection name contains invalid characters");
         }
     }

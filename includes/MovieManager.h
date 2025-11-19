@@ -56,7 +56,7 @@ public:
     std::vector<std::string> getAllCollectionNames() const;
     
     void addMovieToFile(const Movie& movie);
-    void saveMovies();
+    void saveMovies() const;
     void removeMovie(int movieId);
     
     // Новые методы для доступа к сервисам

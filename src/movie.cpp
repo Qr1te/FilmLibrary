@@ -258,7 +258,7 @@ Movie Movie::fromString(const std::string& data) {
         if (std::string genreStr = tokens.size() > 4 ? tokens[4] : ""; !genreStr.empty()) {
             std::istringstream genreStream(genreStr);
             std::string genre;
-            if (genreStr.find(';') != std::string::npos) {
+            if (genreStr.contains(';')) {
                 while (std::getline(genreStream, genre, ';')) {
                     if (!genre.empty()) {
                         genres.push_back(genre);
