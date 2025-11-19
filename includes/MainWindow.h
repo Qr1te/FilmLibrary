@@ -34,7 +34,7 @@ class MainWindow : public QMainWindow {
 
 public:
     explicit MainWindow(QWidget* parent = nullptr);
-    ~MainWindow() override;
+    ~MainWindow() override = default;
 
 private slots:
     void handleSearch();
@@ -67,6 +67,7 @@ private:
     QString stdStringToQString(const std::string& str) const;
     QString findPosterDirectory() const;
     void handleAddMovieToFile(const Movie& movie);
+    std::vector<Movie> findMovieIntersection(const std::vector<Movie>& movies1, const std::vector<Movie>& movies2) const;
 
 private:
     struct SearchUI {

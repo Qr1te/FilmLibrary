@@ -102,10 +102,6 @@ MainWindow::MainWindow(QWidget* parent)
     );
 }
 
-MainWindow::~MainWindow() {
-
-}
-
 void MainWindow::setupUI() {
 
     setWindowTitle("Домашняя фильмотека");
@@ -493,6 +489,19 @@ void MainWindow::handleAddMovieToFile(const Movie& movie) {
     }
 }
 
+std::vector<Movie> MainWindow::findMovieIntersection(const std::vector<Movie>& movies1, const std::vector<Movie>& movies2) const {
+    std::vector<Movie> intersection;
+    for (const auto& movie : movies1) {
+        for (const auto& genreMovie : movies2) {
+            if (movie.getId() == genreMovie.getId()) {
+                intersection.push_back(movie);
+                break;
+            }
+        }
+    }
+    return intersection;
+}
+
 void MainWindow::onMovieSearchSuccess(const Movie& movie, const QString& posterUrl) {
     if (movie.getId() == 0) {
         statusbar->showMessage("Фильм не найден", 3000);
@@ -608,23 +617,18 @@ void MainWindow::handleSearch() {
             filtered = manager.searchByTitleResults(title.toStdString());
         }
         
-        if (!genre.isEmpty()) {
-            std::vector<Movie> genreFiltered = manager.searchByGenreResults(genre.toStdString());
-            
-            if (!title.isEmpty()) {
-                std::vector<Movie> intersection;
-                for (const auto& movie : filtered) {
-                    for (const auto& genreMovie : genreFiltered) {
-                        if (movie.getId() == genreMovie.getId()) {
-                            intersection.push_back(movie);
-                            break;
-                        }
-                    }
-                }
-                filtered = intersection;
-            } else {
-                filtered = genreFiltered;
-            }
+        if (genre.isEmpty()) {
+            populateAllMovies(filtered);
+            statusbar->showMessage(QString("Found %1 movie(s)").arg(filtered.size()), 2000);
+            return;
+        }
+        
+        std::vector<Movie> genreFiltered = manager.searchByGenreResults(genre.toStdString());
+        
+        if (title.isEmpty()) {
+            filtered = genreFiltered;
+        } else {
+            filtered = findMovieIntersection(filtered, genreFiltered);
         }
         
         populateAllMovies(filtered);
@@ -757,9 +761,17 @@ void MainWindow::handleHome() {
 }
 
 void MainWindow::handleAllSelectionChanged() const {
+    /* Intentionally empty - reserved for future selection change handling.
+     * This method is a placeholder for handling selection changes in the "All Movies" tab.
+     * Currently, movie cards handle their own interactions, so this slot remains unimplemented.
+     */
 }
 
 void MainWindow::handleFavSelectionChanged() const {
+    /* Intentionally empty - reserved for future selection change handling.
+     * This method is a placeholder for handling selection changes in the "Favorites" tab.
+     * Currently, movie cards handle their own interactions, so this slot remains unimplemented.
+     */
 }
 
 void MainWindow::handleCreateCollection() {
@@ -836,4 +848,5 @@ void MainWindow::handleDeleteCollection() {
         }
     }
 }
+
 
