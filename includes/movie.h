@@ -41,7 +41,7 @@ private:
 public:
     explicit Movie(const Data& data);
     
-    Movie(int id = 0, const std::string& title = "", double rating = 0.0, int year = 0,
+    explicit Movie(int id = 0, const std::string& title = "", double rating = 0.0, int year = 0,
           const std::vector<std::string>& genres = {}, const std::string& director = "",
           const std::string& description = "", const std::string& posterPath = "",
           const std::string& country = "", const std::string& actors = "", int duration = 0);

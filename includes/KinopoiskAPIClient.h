@@ -5,6 +5,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QString>
 #include <functional>
 #include "movie.h"
@@ -39,6 +40,12 @@ private:
     
     void fetchMovieDetails(int movieId);
     void handleError(const QNetworkReply* reply, const QString& defaultMessage) const;
+    
+    void mergeJsonArray(QJsonObject& fullMovieJson, const QString& key, const QJsonArray& detailArray) const;
+    void mergeJsonString(QJsonObject& fullMovieJson, const QString& key, const QString& detailStr) const;
+    void mergeJsonDouble(QJsonObject& fullMovieJson, const QString& key, double detailNum) const;
+    void mergeJsonObject(QJsonObject& fullMovieJson, const QString& key, const QJsonObject& detailObjValue) const;
+    void mergeDetailData(QJsonObject& fullMovieJson, const QJsonObject& detailObj) const;
 };
 
 #endif // BETA2_KINOPOISKAPICLIENT_H

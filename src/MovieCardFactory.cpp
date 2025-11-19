@@ -211,7 +211,7 @@ void MovieCardFactory::handleMoreButtonClicked(const Movie& movie, const QPushBu
     if (collManager) {
         auto allCollections = movieManager->getAllCollectionNames();
         for (const auto& name : allCollections) {
-            const MovieCollection* collection = const_cast<const CollectionManager*>(collManager)->getCollection(name);
+            const MovieCollection* collection = collManager->getCollection(name);
             if (collection && collection->containsMovie(movie.getId())) {
                 collectionsWithMovie << QString::fromUtf8(name.c_str(), name.length());
             }

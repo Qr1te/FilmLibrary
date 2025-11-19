@@ -21,7 +21,7 @@ private:
     std::string favoritesFile;
 
 public:
-    MovieManager(std::string  moviesFile = "movies.txt",
+    explicit MovieManager(std::string  moviesFile = "movies.txt",
                  std::string  favoritesFile = "favorites.txt");
     ~MovieManager();
 

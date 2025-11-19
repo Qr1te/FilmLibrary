@@ -125,7 +125,7 @@ private:
     std::string collectionsDirectory;
     
 public:
-    CollectionManager(const std::vector<Movie>* allMovies, const std::string& dir = "collections/");
+    explicit CollectionManager(const std::vector<Movie>* allMovies, const std::string& dir = "collections/");
     ~CollectionManager() = default;
     
     MovieCollection* createCollection(const std::string& name);
