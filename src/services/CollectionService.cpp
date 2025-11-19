@@ -73,7 +73,7 @@ std::vector<std::string> CollectionService::getAllCollectionNames() const {
 }
 
 void CollectionService::updateMoviesReference() const {
-    for (auto& [name, collection] : collections) {
+    for (const auto& [name, collection] : collections) {
         collection->setAllMoviesRef(&movieService->getAllMovies());
     }
 }

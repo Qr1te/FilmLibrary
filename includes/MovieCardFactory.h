@@ -26,7 +26,7 @@ public:
 private:
     void handleCollectionException(const std::exception& e) const;
     std::string qStringToStdString(const QString& str) const;
-    void handleMoreButtonClicked(const Movie& movie, QPushButton* moreBtn);
+    void handleMoreButtonClicked(const Movie& movie, const QPushButton* moreBtn);
     void handleAddToCollection(const Movie& movie);
     void handleRemoveFromCollection(const Movie& movie, const QStringList& collectionsWithMovie);
     void handleDeleteMovie(const Movie& movie);

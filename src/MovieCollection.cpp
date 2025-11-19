@@ -301,7 +301,7 @@ void CollectionManager::loadAll() {
 
 void CollectionManager::updateAllMoviesRef(const std::vector<Movie>* movies) {
     allMoviesRef = movies;
-    for (auto& [name, collection] : collections) {
+    for (const auto& [name, collection] : collections) {
         collection->setAllMoviesRef(movies);
     }
 }

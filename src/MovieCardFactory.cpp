@@ -202,11 +202,11 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     return card;
 }
 
-void MovieCardFactory::handleMoreButtonClicked(const Movie& movie, QPushButton* moreBtn) {
+void MovieCardFactory::handleMoreButtonClicked(const Movie& movie, const QPushButton* moreBtn) {
     QMenu menu;
     auto addToCollectionAction = const_cast<const QAction*>(menu.addAction("Добавить в коллекцию"));
     
-    auto* collManager = movieManager->getCollectionManager();
+    const auto* collManager = movieManager->getCollectionManager();
     QStringList collectionsWithMovie;
     if (collManager) {
         auto allCollections = movieManager->getAllCollectionNames();
@@ -306,13 +306,11 @@ void MovieCardFactory::handleRemoveFromCollection(const Movie& movie, const QStr
 }
 
 void MovieCardFactory::handleDeleteMovie(const Movie& movie) {
-    int ret = QMessageBox::question(nullptr, "Удаление фильма",
+    if (int ret = QMessageBox::question(nullptr, "Удаление фильма",
                                     QString("Вы уверены, что хотите удалить '%1'?\n\nЭто действие нельзя отменить.")
                                     .arg(QString::fromStdString(movie.getTitle())),
                                     QMessageBox::Yes | QMessageBox::No,
-                                    QMessageBox::No);
-    
-    if (ret != QMessageBox::Yes) {
+                                    QMessageBox::No); ret != QMessageBox::Yes) {
         return;
     }
     
