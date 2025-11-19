@@ -21,7 +21,7 @@ void CollectionRepository::saveCollection(const MovieCollection& collection) con
     collection.save();
 }
 
-void CollectionRepository::loadCollection(std::string_view name, MovieCollection& collection) const {
+void CollectionRepository::loadCollection(std::string_view /*name*/, MovieCollection& collection) const {
     collection.load();
 }
 
@@ -51,7 +51,7 @@ void CollectionRepository::deleteCollection(const std::string& name) const {
     std::string safeName = name;
     std::ranges::replace(safeName, ' ', '_');
     std::ranges::transform(safeName, safeName.begin(), ::tolower);
-    std::string filename = collectionsDirectory + safeName + ".txt";
+    std::filesystem::path filename = std::filesystem::path(collectionsDirectory) / (safeName + ".txt");
     
     if (std::filesystem::exists(filename)) {
         std::filesystem::remove(filename);
@@ -62,7 +62,7 @@ bool CollectionRepository::collectionExists(const std::string& name) const {
     std::string safeName = name;
     std::ranges::replace(safeName, ' ', '_');
     std::ranges::transform(safeName, safeName.begin(), ::tolower);
-    std::string filename = collectionsDirectory + safeName + ".txt";
+    std::filesystem::path filename = std::filesystem::path(collectionsDirectory) / (safeName + ".txt");
     
     return std::filesystem::exists(filename);
 }

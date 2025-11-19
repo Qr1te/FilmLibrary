@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 #include <iostream>
+#include <format>
 
 MovieRepository::MovieRepository(const std::string& moviesFile)
     : moviesFile(moviesFile) {
@@ -37,7 +38,7 @@ std::vector<Movie> MovieRepository::loadAll() const {
         if (fullLine.empty()) {
             fullLine = line;
         } else {
-            fullLine += " " + line;
+            fullLine = std::format("{} {}", fullLine, line);
         }
         
         int pipeCount = std::ranges::count(fullLine, '|');
@@ -46,19 +47,19 @@ std::vector<Movie> MovieRepository::loadAll() const {
                 Movie movie = Movie::fromString(fullLine);
                 if (movie.getId() != 0) {
                     if (movie.getPosterPath().empty() && movie.getId() > 0) {
-                        std::string possiblePath = "posters/" + std::to_string(movie.getId()) + ".jpg";
+                        std::string possiblePath = std::format("posters/{}.jpg", movie.getId());
                         movie.setPosterPath(possiblePath);
                     }
                     movies.push_back(movie);
                     fullLine.clear();
                 } else {
-                    throw InvalidMovieDataException("Line " + std::to_string(lineNumber));
+                    throw InvalidMovieDataException(std::format("Line {}", lineNumber));
                 }
             } catch (const InvalidMovieDataException& e) {
-                std::cerr << "Warning: Invalid movie data on line " << lineNumber << ": " << e.what() << std::endl;
+                std::cerr << std::format("Warning: Invalid movie data on line {}: {}\n", lineNumber, e.what());
                 fullLine.clear();
             } catch (const std::invalid_argument& e) {
-                std::cerr << "Warning: Invalid argument on line " << lineNumber << ": " << e.what() << std::endl;
+                std::cerr << std::format("Warning: Invalid argument on line {}: {}\n", lineNumber, e.what());
                 fullLine.clear();
             }
         }
@@ -69,15 +70,15 @@ std::vector<Movie> MovieRepository::loadAll() const {
             Movie movie = Movie::fromString(fullLine);
             if (movie.getId() != 0) {
                 if (movie.getPosterPath().empty() && movie.getId() > 0) {
-                    std::string possiblePath = "posters/" + std::to_string(movie.getId()) + ".jpg";
+                    std::string possiblePath = std::format("posters/{}.jpg", movie.getId());
                     movie.setPosterPath(possiblePath);
                 }
                 movies.push_back(movie);
             }
         } catch (const InvalidMovieDataException& e) {
-            std::cerr << "Warning: Failed to parse movie data: " << e.what() << std::endl;
+            std::cerr << std::format("Warning: Failed to parse movie data: {}\n", e.what());
         } catch (const std::invalid_argument& e) {
-            std::cerr << "Warning: Parsing error: " << e.what() << std::endl;
+            std::cerr << std::format("Warning: Parsing error: {}\n", e.what());
         }
     }
     

@@ -36,7 +36,7 @@ std::vector<Movie> MovieService::searchByTitle(const std::string& title) const {
     for (const auto& movie : movies) {
         std::string movieTitle = movie.getTitle();
         std::ranges::transform(movieTitle, movieTitle.begin(), ::tolower);
-        if (movieTitle.find(searchTitle) != std::string::npos) {
+        if (movieTitle.contains(searchTitle)) {
             results.push_back(movie);
         }
     }

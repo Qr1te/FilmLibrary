@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <ranges>
+#include <format>
 
 FavoriteRepository::FavoriteRepository(const std::string& favoritesFile)
     : favoritesFile(favoritesFile) {
@@ -44,7 +45,7 @@ void FavoriteRepository::saveAll(const std::vector<int>& favoriteIds) const {
 
 void FavoriteRepository::addFavorite(int movieId, std::vector<int>& favoriteIds) const {
     if (auto it = std::ranges::find(favoriteIds, movieId); it != favoriteIds.end()) {
-        throw DuplicateFavoriteException("Фильм с ID " + std::to_string(movieId));
+        throw DuplicateFavoriteException(std::format("Фильм с ID {}", movieId));
     }
 
     favoriteIds.insert(favoriteIds.begin(), movieId);
