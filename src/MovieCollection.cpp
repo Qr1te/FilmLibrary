@@ -258,10 +258,8 @@ void CollectionManager::saveAll() const {
 std::string CollectionManager::extractCollectionName(const std::filesystem::path& filepath) const {
     std::ifstream file(filepath.string(), std::ios::binary);
     std::string collectionName;
-    if (file.is_open() && std::getline(file, collectionName)) {
-        if (!collectionName.empty()) {
-            return collectionName;
-        }
+    if (file.is_open() && std::getline(file, collectionName) && !collectionName.empty()) {
+        return collectionName;
     }
     
     std::string filename = filepath.filename().string();

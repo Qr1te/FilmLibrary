@@ -9,6 +9,15 @@
 #include <istream>
 #include <compare>
 
+class MovieParser {
+public:
+    static int parseId(const std::vector<std::string>& tokens);
+    static double parseRating(const std::vector<std::string>& tokens);
+    static int parseYear(const std::vector<std::string>& tokens);
+    static std::vector<std::string> parseGenres(const std::vector<std::string>& tokens);
+    static int parseDuration(const std::vector<std::string>& tokens);
+};
+
 class Movie {
 public:
     struct Data {
@@ -84,13 +93,6 @@ public:
     bool hasGenre(std::string_view genre) const;
 
 private:
-    // Helper functions for fromString to reduce complexity
-    static int parseId(const std::vector<std::string>& tokens);
-    static double parseRating(const std::vector<std::string>& tokens);
-    static int parseYear(const std::vector<std::string>& tokens);
-    static std::vector<std::string> parseGenres(const std::vector<std::string>& tokens);
-    static int parseDuration(const std::vector<std::string>& tokens);
-
     bool operator==(const Movie& other) const;
     std::partial_ordering operator<=>(const Movie& other) const;
     

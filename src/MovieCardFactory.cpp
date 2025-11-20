@@ -135,7 +135,7 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
 
     card->setProperty("movieId", movie.getId());
     
-    setupButtonConnections(card, playBtn, favoriteBtn, moreBtn, infoBtn, movie);
+    setupButtonConnections(playBtn, favoriteBtn, moreBtn, infoBtn, movie);
 
     return card;
 }
@@ -285,7 +285,7 @@ QPushButton* MovieCardFactory::createInfoButton() const {
     return infoBtn;
 }
 
-void MovieCardFactory::setupButtonConnections(QWidget* card, QPushButton* playBtn, QPushButton* favoriteBtn, 
+void MovieCardFactory::setupButtonConnections(QPushButton* playBtn, QPushButton* favoriteBtn, 
                                               QPushButton* moreBtn, QPushButton* infoBtn, const Movie& movie) const {
     QObject::connect(playBtn, &QPushButton::clicked, [movie]() {
         int movieId = movie.getId();
