@@ -1,11 +1,10 @@
-#include "../../includes/services/MovieService.h"
+#include "services/MovieService.h"
 #include <algorithm>
 #include <ranges>
 #include <cctype>
 
-// Helper function for C++20 compatibility (contains() is C++23)
-static bool string_contains(std::string_view str, std::string_view substr) { // NOSONAR: S6589 C++20 compatibility
-    return str.find(substr) != std::string_view::npos; // NOSONAR: S6589 C++20 compatibility
+static bool string_contains(std::string_view str, std::string_view substr) {
+    return str.find(substr) != std::string_view::npos;
 }
 
 MovieService::MovieService(const std::string& moviesFile)

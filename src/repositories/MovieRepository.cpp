@@ -1,5 +1,5 @@
-#include "../../includes/repositories/MovieRepository.h"
-#include "../../includes/exceptions/InvalidMovieDataException.h"
+#include "repositories/MovieRepository.h"
+#include "exceptions/InvalidMovieDataException.h"
 #include <fstream>
 #include <algorithm>
 #include <ranges>

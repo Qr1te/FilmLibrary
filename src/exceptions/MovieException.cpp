@@ -1,4 +1,4 @@
-#include "../../includes/exceptions/MovieException.h"
+#include "exceptions/MovieException.h"
 
 MovieException::MovieException(const std::string& msg) : message(msg) {}
 

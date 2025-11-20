@@ -1,7 +1,7 @@
-#include "../../includes/repositories/FavoriteRepository.h"
-#include "../../includes/exceptions/DuplicateFavoriteException.h"
-#include "../../includes/exceptions/MovieNotFoundException.h"
-#include "../../includes/exceptions/FileNotFoundException.h"
+#include "repositories/FavoriteRepository.h"
+#include "exceptions/DuplicateFavoriteException.h"
+#include "exceptions/MovieNotFoundException.h"
+#include "exceptions/FileNotFoundException.h"
 #include <fstream>
 #include <algorithm>
 #include <ranges>

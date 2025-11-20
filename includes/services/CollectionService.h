@@ -1,7 +1,7 @@
 #ifndef BETA2_COLLECTIONSERVICE_H
 #define BETA2_COLLECTIONSERVICE_H
 
-#include "../MovieCollection.h"
+#include "../models/MovieCollection.h"
 #include "../repositories/CollectionRepository.h"
 #include "../services/MovieService.h"
 #include <vector>

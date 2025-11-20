@@ -1,4 +1,4 @@
-#include "../../includes/exceptions/MovieNotFoundException.h"
+#include "exceptions/MovieNotFoundException.h"
 #include <format>
 
 MovieNotFoundException::MovieNotFoundException(int id)

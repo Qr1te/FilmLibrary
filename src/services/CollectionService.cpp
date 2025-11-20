@@ -1,6 +1,6 @@
-#include "../../includes/services/CollectionService.h"
-#include "../../includes/exceptions/DuplicateCollectionException.h"
-#include "../../includes/exceptions/CollectionNotFoundException.h"
+#include "services/CollectionService.h"
+#include "exceptions/DuplicateCollectionException.h"
+#include "exceptions/CollectionNotFoundException.h"
 #include <algorithm>
 
 CollectionService::CollectionService(MovieService* movieService, const std::string& dir)

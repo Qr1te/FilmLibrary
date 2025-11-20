@@ -1,7 +1,7 @@
 #ifndef BETA2_MOVIEREPOSITORY_H
 #define BETA2_MOVIEREPOSITORY_H
 
-#include "../movie.h"
+#include "../models/movie.h"
 #include "../exceptions/exceptions.h"
 #include <vector>
 #include <string>
@@ -10,7 +10,6 @@ class MovieRepository {
 private:
     std::string moviesFile;
     
-    // Helper functions to reduce complexity
     bool processFullLine(const std::string& fullLine, int lineNumber, std::vector<Movie>& movies) const;
     void processRemainingLine(const std::string& fullLine, std::vector<Movie>& movies) const;
     void setDefaultPosterPath(Movie& movie) const;

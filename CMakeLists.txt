@@ -14,8 +14,10 @@ find_package(Qt6 COMPONENTS
         REQUIRED)
 
 add_executable(beta2 src/main.cpp
-        src/movie.cpp
-        includes/movie.h
+        src/models/movie.cpp
+        includes/models/movie.h
+        src/models/MovieCollection.cpp
+        includes/models/MovieCollection.h
         src/exceptions/MovieException.cpp
         includes/exceptions/MovieException.h
         src/exceptions/FileNotFoundException.cpp
@@ -51,18 +53,22 @@ add_executable(beta2 src/main.cpp
         includes/services/CollectionService.h
         src/parsers/MovieJsonParser.cpp
         includes/parsers/MovieJsonParser.h
-        src/MovieManager.cpp
-        includes/MovieManager.h
-        src/MovieCollection.cpp
-        includes/MovieCollection.h
-        src/MainWindow.cpp
-        includes/MainWindow.h
-        src/KinopoiskAPIClient.cpp
-        includes/KinopoiskAPIClient.h
-        src/PosterManager.cpp
-        includes/PosterManager.h
-        src/MovieCardFactory.cpp
-        includes/MovieCardFactory.h)
+        src/parsers/MovieParser.cpp
+        includes/parsers/MovieParser.h
+        src/managers/MovieManager.cpp
+        includes/managers/MovieManager.h
+        src/managers/PosterManager.cpp
+        includes/managers/PosterManager.h
+        src/ui/MainWindow.cpp
+        includes/ui/MainWindow.h
+        src/api/KinopoiskAPIClient.cpp
+        includes/api/KinopoiskAPIClient.h
+        src/ui/MovieCardFactory.cpp
+        includes/ui/MovieCardFactory.h)
+
+# Add includes directory to include path
+target_include_directories(beta2 PRIVATE ${CMAKE_SOURCE_DIR}/includes)
+
 target_link_libraries(beta2
         Qt::Core
         Qt::Gui

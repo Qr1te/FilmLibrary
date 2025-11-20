@@ -1,7 +1,7 @@
 #ifndef BETA2_MOVIESERVICE_H
 #define BETA2_MOVIESERVICE_H
 
-#include "../movie.h"
+#include "../models/movie.h"
 #include "../repositories/MovieRepository.h"
 #include "../exceptions/exceptions.h"
 #include <vector>

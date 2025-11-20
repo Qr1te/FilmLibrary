@@ -1,7 +1,7 @@
 #ifndef BETA2_MOVIEJSONPARSER_H
 #define BETA2_MOVIEJSONPARSER_H
 
-#include "../movie.h"
+#include "../models/movie.h"
 #include <QJsonObject>
 #include <QString>
 
@@ -11,7 +11,6 @@ public:
     static QString extractPosterUrl(const QJsonObject& movieJson);
 
 private:
-    // Helper functions to reduce complexity
     static double extractRating(const QJsonObject& json);
     static QStringList extractGenres(const QJsonObject& json);
     static QString extractDirector(const QJsonObject& json);
@@ -19,13 +18,11 @@ private:
     static QString extractActors(const QJsonObject& json);
     static int extractDuration(const QJsonObject& json);
     
-    // Helper functions for nested parsing
     static QString extractPersonName(const QJsonObject& person);
     static QString extractCountryName(const QJsonValue& countryValue);
     static QString extractActorName(const QJsonObject& actorObj);
     static int parseDurationValue(const QJsonValue& value);
-    
-    // Helper functions to reduce complexity further
+
     static QStringList extractCountriesFromArray(const QJsonArray& countriesArray);
     static QStringList extractCountriesFromValue(const QJsonValue& countryValue);
     static QStringList extractActorsFromPersons(const QJsonObject& json);
@@ -35,7 +32,7 @@ private:
     static int extractDurationFromValue(const QJsonValue& value, const QString& /*key*/);
 };
 
-#endif // BETA2_MOVIEJSONPARSER_H
+#endif
 
 
 

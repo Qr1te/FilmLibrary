@@ -1,4 +1,4 @@
-#include "../../includes/parsers/MovieJsonParser.h"
+#include "parsers/MovieJsonParser.h"
 #include <QJsonArray>
 #include <QJsonValue>
 #include <QStringList>
@@ -398,12 +398,20 @@ Movie MovieJsonParser::parseMovieFromJSON(const QJsonObject& json) {
         posterPath = "posters/" + QString::number(id) + ".jpg";
     }
     
-    Movie movie(id, name.toStdString(), rating, year, genres, 
-                 director.toStdString(), description.toStdString(),
-                 posterPath.toStdString(), country.toStdString(), 
-                 actors.toStdString(), duration);
+    Movie::Data movieData;
+    movieData.id = id;
+    movieData.title = name.toStdString();
+    movieData.rating = rating;
+    movieData.year = year;
+    movieData.genres = genres;
+    movieData.director = director.toStdString();
+    movieData.description = description.toStdString();
+    movieData.posterPath = posterPath.toStdString();
+    movieData.country = country.toStdString();
+    movieData.actors = actors.toStdString();
+    movieData.duration = duration;
     
-    return movie;
+    return Movie(movieData);
 }
 
 QString MovieJsonParser::extractPosterUrl(const QJsonObject& movieJson) {

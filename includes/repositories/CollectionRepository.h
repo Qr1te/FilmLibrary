@@ -1,7 +1,7 @@
 #ifndef BETA2_COLLECTIONREPOSITORY_H
 #define BETA2_COLLECTIONREPOSITORY_H
 
-#include "../MovieCollection.h"
+#include "../models/MovieCollection.h"
 #include <string>
 #include <string_view>
 #include <vector>

@@ -1,5 +1,5 @@
-#include "../../includes/services/FavoriteService.h"
-#include "../../includes/exceptions/MovieNotFoundException.h"
+#include "services/FavoriteService.h"
+#include "exceptions/MovieNotFoundException.h"
 #include <algorithm>
 
 FavoriteService::FavoriteService(MovieService* movieService, const std::string& favoritesFile)

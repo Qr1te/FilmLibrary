@@ -1,4 +1,4 @@
-#include "../../includes/repositories/CollectionRepository.h"
+#include "repositories/CollectionRepository.h"
 #include <filesystem>
 #include <fstream>
 #include <algorithm>
@@ -10,7 +10,7 @@ CollectionRepository::CollectionRepository(const std::string& dir)
     try {
         std::filesystem::create_directories(collectionsDirectory);
     } catch (const std::filesystem::filesystem_error& e) {
-        // Директория может уже существовать, это не критично
+
         if (!std::filesystem::exists(collectionsDirectory)) {
             std::cerr << "Warning: Failed to create collections directory: " << e.what() << std::endl;
         }

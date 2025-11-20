@@ -1,7 +1,7 @@
 #ifndef BETA2_FAVORITESERVICE_H
 #define BETA2_FAVORITESERVICE_H
 
-#include "../movie.h"
+#include "../models/movie.h"
 #include "../repositories/FavoriteRepository.h"
 #include "../services/MovieService.h"
 #include <vector>
