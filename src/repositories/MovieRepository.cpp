@@ -83,11 +83,8 @@ std::vector<Movie> MovieRepository::loadAll() const {
         
         int pipeCount = std::ranges::count(fullLine, '|');
         if (pipeCount >= 10) {
-            if (processFullLine(fullLine, lineNumber, movies)) {
-                fullLine.clear();
-            } else {
-                fullLine.clear();
-            }
+            processFullLine(fullLine, lineNumber, movies);
+            fullLine.clear();
         }
     }
     
