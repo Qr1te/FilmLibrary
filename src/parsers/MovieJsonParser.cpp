@@ -52,13 +52,11 @@ QString MovieJsonParser::extractDirector(const QJsonObject& json) {
         for (const QJsonValue& value : personsArray) {
             QJsonObject person = value.toObject();
             QString profession = person["enProfession"].toString();
-            QString professionRu = person["profession"].toString();
             
-            bool isDirector = (profession == "director" || 
-                             professionRu == "режиссер" || 
-                             professionRu.contains("режиссер", Qt::CaseInsensitive));
-            
-            if (!isDirector) {
+            if (QString professionRu = person["profession"].toString();
+                !(profession == "director" || 
+                  professionRu == "режиссер" || 
+                  professionRu.contains("режиссер", Qt::CaseInsensitive))) {
                 continue;
             }
             
@@ -223,9 +221,9 @@ QStringList MovieJsonParser::extractActorsFromPersons(const QJsonObject& json) {
         
         QJsonObject person = value.toObject();
         QString profession = person["enProfession"].toString();
-        QString professionRu = person["profession"].toString();
         
-        if (!isActorProfession(profession, professionRu)) {
+        if (QString professionRu = person["profession"].toString();
+            !isActorProfession(profession, professionRu)) {
             continue;
         }
         

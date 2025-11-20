@@ -4,8 +4,8 @@
 #include <cctype>
 
 // Helper function for C++20 compatibility (contains() is C++23)
-static bool string_contains(const std::string& str, const std::string& substr) {
-    return str.find(substr) != std::string::npos;
+static bool string_contains(std::string_view str, std::string_view substr) {
+    return str.find(substr) != std::string_view::npos;
 }
 
 MovieService::MovieService(const std::string& moviesFile)

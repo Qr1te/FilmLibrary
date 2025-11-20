@@ -9,8 +9,8 @@
 #include <string_view>
 
 // Helper function for C++20 compatibility (contains() is C++23)
-static bool string_contains(const std::string& str, char c) {
-    return str.find(c) != std::string::npos;
+static bool string_contains(std::string_view str, char c) {
+    return str.find(c) != std::string_view::npos;
 }
 
 static std::string trim(std::string_view str) {

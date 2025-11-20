@@ -331,9 +331,9 @@ QString PosterManager::detectImageExtension(const QByteArray& imageData) const {
 
 QImage PosterManager::loadImageFromData(const QByteArray& imageData, QString& detectedFormat) const {
     QImage image;
-    QString initialFormat = detectedFormat;
     
-    if (image.loadFromData(imageData) || image.loadFromData(imageData, initialFormat.toUtf8().constData())) {
+    if (QString initialFormat = detectedFormat; 
+        image.loadFromData(imageData) || image.loadFromData(imageData, initialFormat.toUtf8().constData())) {
         return image;
     }
     
@@ -349,8 +349,7 @@ QImage PosterManager::loadImageFromData(const QByteArray& imageData, QString& de
 }
 
 bool PosterManager::validateSavedFile(const QString& filePath) const {
-    QImage testImage;
-    if (testImage.load(filePath)) {
+    if (QImage testImage; testImage.load(filePath)) {
         return true;
     }
     if (QFile::exists(filePath) && QFileInfo(filePath).size() > 0) {

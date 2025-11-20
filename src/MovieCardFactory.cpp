@@ -285,8 +285,8 @@ QPushButton* MovieCardFactory::createInfoButton() const {
     return infoBtn;
 }
 
-void MovieCardFactory::setupButtonConnections(QPushButton* playBtn, QPushButton* favoriteBtn, 
-                                              QPushButton* moreBtn, QPushButton* infoBtn, const Movie& movie) const {
+void MovieCardFactory::setupButtonConnections(const QPushButton* playBtn, QPushButton* favoriteBtn, 
+                                              const QPushButton* moreBtn, const QPushButton* infoBtn, const Movie& movie) const {
     QObject::connect(playBtn, &QPushButton::clicked, [movie]() {
         int movieId = movie.getId();
         if (movieId > 0) {

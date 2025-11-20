@@ -36,8 +36,8 @@ private:
     QPushButton* createFavoriteButton(const Movie& movie) const;
     QPushButton* createMoreButton() const;
     QPushButton* createInfoButton() const;
-    void setupButtonConnections(QPushButton* playBtn, QPushButton* favoriteBtn, 
-                                QPushButton* moreBtn, QPushButton* infoBtn, const Movie& movie) const;
+    void setupButtonConnections(const QPushButton* playBtn, QPushButton* favoriteBtn, 
+                                const QPushButton* moreBtn, const QPushButton* infoBtn, const Movie& movie) const;
     
     MovieManager* movieManager;
     PosterManager* posterManager;
