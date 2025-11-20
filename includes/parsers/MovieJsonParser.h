@@ -24,6 +24,15 @@ private:
     static QString extractCountryName(const QJsonValue& countryValue);
     static QString extractActorName(const QJsonObject& actorObj);
     static int parseDurationValue(const QJsonValue& value);
+    
+    // Helper functions to reduce complexity further
+    static QStringList extractCountriesFromArray(const QJsonArray& countriesArray);
+    static QStringList extractCountriesFromValue(const QJsonValue& countryValue);
+    static QStringList extractActorsFromPersons(const QJsonObject& json);
+    static QStringList extractActorsFromArray(const QJsonArray& actorsArray, int maxCount);
+    static QStringList extractActorsFromCast(const QJsonArray& castArray, int maxCount);
+    static bool isActorProfession(const QString& profession, const QString& professionRu);
+    static int extractDurationFromValue(const QJsonValue& value, const QString& key);
 };
 
 #endif // BETA2_MOVIEJSONPARSER_H

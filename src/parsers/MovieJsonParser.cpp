@@ -108,49 +108,57 @@ QString MovieJsonParser::extractCountryName(const QJsonValue& countryValue) {
     return countryObj["alternativeName"].toString();
 }
 
+QStringList MovieJsonParser::extractCountriesFromArray(const QJsonArray& countriesArray) {
+    QStringList countries;
+    for (const QJsonValue& value : countriesArray) {
+        QString countryName = extractCountryName(value);
+        if (!countryName.isEmpty()) {
+            countries << countryName;
+        }
+    }
+    return countries;
+}
+
+QStringList MovieJsonParser::extractCountriesFromValue(const QJsonValue& countryValue) {
+    QStringList countries;
+    
+    if (countryValue.isString()) {
+        countries << countryValue.toString();
+        return countries;
+    }
+    
+    if (countryValue.isArray()) {
+        return extractCountriesFromArray(countryValue.toArray());
+    }
+    
+    if (countryValue.isObject()) {
+        QString countryName = extractCountryName(countryValue);
+        if (!countryName.isEmpty()) {
+            countries << countryName;
+        }
+    }
+    
+    return countries;
+}
+
 QString MovieJsonParser::extractCountry(const QJsonObject& json) {
     QStringList countries;
     
     if (json.contains("countries")) {
         QJsonArray countriesArray = json["countries"].toArray();
-        for (const QJsonValue& value : countriesArray) {
-            QString countryName = extractCountryName(value);
-            if (!countryName.isEmpty()) {
-                countries << countryName;
-            }
-        }
+        countries = extractCountriesFromArray(countriesArray);
     }
     
     if (countries.isEmpty() && json.contains("country")) {
         QJsonValue countryValue = json["country"];
-        if (countryValue.isString()) {
-            countries << countryValue.toString();
-        } else if (countryValue.isArray()) {
-            QJsonArray countryArray = countryValue.toArray();
-            for (const QJsonValue& value : countryArray) {
-                QString countryName = extractCountryName(value);
-                if (!countryName.isEmpty()) {
-                    countries << countryName;
-                }
-            }
-        } else if (countryValue.isObject()) {
-            QString countryName = extractCountryName(countryValue);
-            if (!countryName.isEmpty()) {
-                countries << countryName;
-            }
-        }
+        countries = extractCountriesFromValue(countryValue);
     }
     
     if (countries.isEmpty() && json.contains("productionCountries")) {
         QJsonValue productionCountries = json["productionCountries"];
         if (productionCountries.isArray()) {
             QJsonArray countriesArray = productionCountries.toArray();
-            for (const QJsonValue& value : countriesArray) {
-                QString countryName = extractCountryName(value);
-                if (!countryName.isEmpty()) {
-                    countries << countryName;
-                }
-            }
+            countries = extractCountriesFromArray(countriesArray);
         }
     }
     
@@ -183,40 +191,107 @@ QString MovieJsonParser::extractActorName(const QJsonObject& actorObj) {
     return "";
 }
 
-QString MovieJsonParser::extractActors(const QJsonObject& json) {
+bool MovieJsonParser::isActorProfession(const QString& profession, const QString& professionRu) {
+    if (profession == "actor" || profession == "актер") {
+        return true;
+    }
+    
+    if (professionRu.contains("актер", Qt::CaseInsensitive) ||
+        professionRu.contains("актриса", Qt::CaseInsensitive) ||
+        professionRu == "актер" || 
+        professionRu == "актриса" ||
+        professionRu.contains("actor", Qt::CaseInsensitive)) {
+        return true;
+    }
+    
+    return false;
+}
+
+QStringList MovieJsonParser::extractActorsFromPersons(const QJsonObject& json) {
     QStringList actorsList;
     int count = 0;
     
-    if (json.contains("persons")) {
-        QJsonArray personsArray = json["persons"].toArray();
-        for (const QJsonValue& value : personsArray) {
-            if (!value.isObject() || count >= 5) {
-                continue;
-            }
-            
-            QJsonObject person = value.toObject();
-            QString profession = person["enProfession"].toString();
-            QString professionRu = person["profession"].toString();
-            
-            bool isActor = (profession == "actor" || 
-                           profession == "актер" ||
-                           professionRu.contains("актер", Qt::CaseInsensitive) ||
-                           professionRu.contains("актриса", Qt::CaseInsensitive) ||
-                           professionRu == "актер" || 
-                           professionRu == "актриса" ||
-                           professionRu.contains("actor", Qt::CaseInsensitive));
-            
-            if (!isActor) {
-                continue;
-            }
-            
-            QString actorName = extractActorName(person);
-            if (!actorName.isEmpty()) {
-                actorsList << actorName;
-                count++;
-            }
+    if (!json.contains("persons")) {
+        return actorsList;
+    }
+    
+    QJsonArray personsArray = json["persons"].toArray();
+    for (const QJsonValue& value : personsArray) {
+        if (!value.isObject() || count >= 5) {
+            continue;
+        }
+        
+        QJsonObject person = value.toObject();
+        QString profession = person["enProfession"].toString();
+        QString professionRu = person["profession"].toString();
+        
+        if (!isActorProfession(profession, professionRu)) {
+            continue;
+        }
+        
+        QString actorName = extractActorName(person);
+        if (!actorName.isEmpty()) {
+            actorsList << actorName;
+            count++;
         }
     }
+    
+    return actorsList;
+}
+
+QStringList MovieJsonParser::extractActorsFromArray(const QJsonArray& actorsArray, int maxCount) {
+    QStringList actorsList;
+    
+    for (const QJsonValue& value : actorsArray) {
+        if (actorsList.size() >= maxCount) {
+            break;
+        }
+        
+        if (value.isString()) {
+            actorsList << value.toString();
+            continue;
+        }
+        
+        if (!value.isObject()) {
+            continue;
+        }
+        
+        QString actorName = extractActorName(value.toObject());
+        if (!actorName.isEmpty()) {
+            actorsList << actorName;
+        }
+    }
+    
+    return actorsList;
+}
+
+QStringList MovieJsonParser::extractActorsFromCast(const QJsonArray& castArray, int maxCount) {
+    QStringList actorsList;
+    
+    for (const QJsonValue& value : castArray) {
+        if (actorsList.size() >= maxCount) {
+            break;
+        }
+        
+        if (!value.isObject()) {
+            continue;
+        }
+        
+        QJsonObject castObj = value.toObject();
+        QString actorName = castObj["name"].toString();
+        if (actorName.isEmpty()) {
+            actorName = castObj["character"].toString();
+        }
+        if (!actorName.isEmpty()) {
+            actorsList << actorName;
+        }
+    }
+    
+    return actorsList;
+}
+
+QString MovieJsonParser::extractActors(const QJsonObject& json) {
+    QStringList actorsList = extractActorsFromPersons(json);
     
     if (actorsList.isEmpty() && json.contains("actors")) {
         QJsonValue actorsValue = json["actors"];
@@ -225,46 +300,14 @@ QString MovieJsonParser::extractActors(const QJsonObject& json) {
         }
         
         if (actorsValue.isArray()) {
-            QJsonArray actorsArray = actorsValue.toArray();
-            for (const QJsonValue& value : actorsArray) {
-                if (actorsList.size() >= 5) {
-                    break;
-                }
-                
-                if (value.isString()) {
-                    actorsList << value.toString();
-                } else if (value.isObject()) {
-                    QString actorName = extractActorName(value.toObject());
-                    if (!actorName.isEmpty()) {
-                        actorsList << actorName;
-                    }
-                }
-            }
+            actorsList = extractActorsFromArray(actorsValue.toArray(), 5);
         }
     }
     
     if (actorsList.isEmpty() && json.contains("cast")) {
         QJsonValue castValue = json["cast"];
         if (castValue.isArray()) {
-            QJsonArray castArray = castValue.toArray();
-            for (const QJsonValue& value : castArray) {
-                if (actorsList.size() >= 5) {
-                    break;
-                }
-                
-                if (!value.isObject()) {
-                    continue;
-                }
-                
-                QJsonObject castObj = value.toObject();
-                QString actorName = castObj["name"].toString();
-                if (actorName.isEmpty()) {
-                    actorName = castObj["character"].toString();
-                }
-                if (!actorName.isEmpty()) {
-                    actorsList << actorName;
-                }
-            }
+            actorsList = extractActorsFromCast(castValue.toArray(), 5);
         }
     }
     
@@ -285,54 +328,40 @@ int MovieJsonParser::parseDurationValue(const QJsonValue& value) {
     return 0;
 }
 
+int MovieJsonParser::extractDurationFromValue(const QJsonValue& value, const QString& key) {
+    if (value.type() == QJsonValue::Null || value.type() == QJsonValue::Undefined) {
+        return 0;
+    }
+    
+    int duration = value.toInt();
+    return duration > 0 ? duration : 0;
+}
+
 int MovieJsonParser::extractDuration(const QJsonObject& json) {
-    if (json.contains("movieLength")) {
-        int duration = parseDurationValue(json["movieLength"]);
-        if (duration > 0) {
-            return duration;
-        }
-    }
+    const QStringList durationKeys = {"movieLength", "length", "duration", "runtime"};
     
-    if (json.contains("length")) {
-        int duration = parseDurationValue(json["length"]);
-        if (duration > 0) {
-            return duration;
+    for (const QString& key : durationKeys) {
+        if (!json.contains(key)) {
+            continue;
         }
-    }
-    
-    if (json.contains("duration")) {
-        int duration = parseDurationValue(json["duration"]);
-        if (duration > 0) {
-            return duration;
-        }
-    }
-    
-    if (json.contains("runtime")) {
-        int duration = parseDurationValue(json["runtime"]);
+        
+        int duration = parseDurationValue(json[key]);
         if (duration > 0) {
             return duration;
         }
     }
     
     if (json.contains("seriesLength")) {
-        QJsonValue seriesLength = json["seriesLength"];
-        if (seriesLength.type() != QJsonValue::Null && 
-            seriesLength.type() != QJsonValue::Undefined) {
-            int seriesLen = seriesLength.toInt();
-            if (seriesLen > 0) {
-                return seriesLen;
-            }
+        int duration = extractDurationFromValue(json["seriesLength"], "seriesLength");
+        if (duration > 0) {
+            return duration;
         }
     }
     
     if (json.contains("totalSeriesLength")) {
-        QJsonValue totalSeriesLength = json["totalSeriesLength"];
-        if (totalSeriesLength.type() != QJsonValue::Null && 
-            totalSeriesLength.type() != QJsonValue::Undefined) {
-            int totalLen = totalSeriesLength.toInt();
-            if (totalLen > 0) {
-                return totalLen;
-            }
+        int duration = extractDurationFromValue(json["totalSeriesLength"], "totalSeriesLength");
+        if (duration > 0) {
+            return duration;
         }
     }
     
