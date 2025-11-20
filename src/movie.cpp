@@ -8,6 +8,11 @@
 #include <stdexcept>
 #include <string_view>
 
+// Helper function for C++20 compatibility (contains() is C++23)
+static bool string_contains(const std::string& str, char c) {
+    return str.find(c) != std::string::npos;
+}
+
 static std::string trim(std::string_view str) {
     size_t first = str.find_first_not_of(" \t\n\r");
     if (first == std::string_view::npos) return "";
@@ -260,7 +265,7 @@ std::vector<std::string> MovieParser::parseGenres(const std::vector<std::string>
         return genres;
     }
     
-    if (genreStr.find(';') == std::string::npos) {
+    if (!string_contains(genreStr, ';')) {
         genres.push_back(genreStr);
         return genres;
     }
@@ -300,28 +305,29 @@ Movie Movie::fromString(const std::string& data) {
         tokens.push_back(trimmed);
     }
 
+    Movie::Data movieData;
+    
     if (tokens.size() < 7) {
-        return MovieBuilder().build();
+        return Movie(movieData);
     }
     
-    int id = MovieParser::parseId(tokens);
-    if (id == 0) {
-        return MovieBuilder().build();
+    movieData.id = MovieParser::parseId(tokens);
+    if (movieData.id == 0) {
+        return Movie(movieData);
     }
     
-    return MovieBuilder()
-        .setId(id)
-        .setTitle(tokens.size() > 1 ? tokens[1] : "")
-        .setRating(MovieParser::parseRating(tokens))
-        .setYear(MovieParser::parseYear(tokens))
-        .setGenres(MovieParser::parseGenres(tokens))
-        .setDirector(tokens.size() > 5 ? tokens[5] : "")
-        .setDescription(tokens.size() > 6 ? tokens[6] : "")
-        .setPosterPath(tokens.size() > 7 ? tokens[7] : "")
-        .setCountry(tokens.size() > 8 ? tokens[8] : "")
-        .setActors(tokens.size() > 9 ? tokens[9] : "")
-        .setDuration(MovieParser::parseDuration(tokens))
-        .build();
+    movieData.title = tokens.size() > 1 ? tokens[1] : "";
+    movieData.rating = MovieParser::parseRating(tokens);
+    movieData.year = MovieParser::parseYear(tokens);
+    movieData.genres = MovieParser::parseGenres(tokens);
+    movieData.director = tokens.size() > 5 ? tokens[5] : "";
+    movieData.description = tokens.size() > 6 ? tokens[6] : "";
+    movieData.posterPath = tokens.size() > 7 ? tokens[7] : "";
+    movieData.country = tokens.size() > 8 ? tokens[8] : "";
+    movieData.actors = tokens.size() > 9 ? tokens[9] : "";
+    movieData.duration = MovieParser::parseDuration(tokens);
+    
+    return Movie(movieData);
 }
 
 bool Movie::operator==(const Movie& other) const {

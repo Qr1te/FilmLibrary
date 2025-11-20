@@ -3,6 +3,11 @@
 #include <ranges>
 #include <cctype>
 
+// Helper function for C++20 compatibility (contains() is C++23)
+static bool string_contains(const std::string& str, const std::string& substr) {
+    return str.find(substr) != std::string::npos;
+}
+
 MovieService::MovieService(const std::string& moviesFile)
     : repository(moviesFile) {
     reload();
@@ -36,7 +41,7 @@ std::vector<Movie> MovieService::searchByTitle(const std::string& title) const {
     for (const auto& movie : movies) {
         std::string movieTitle = movie.getTitle();
         std::ranges::transform(movieTitle, movieTitle.begin(), ::tolower);
-        if (movieTitle.find(searchTitle) != std::string::npos) {
+        if (string_contains(movieTitle, searchTitle)) {
             results.push_back(movie);
         }
     }

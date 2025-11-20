@@ -8,6 +8,11 @@
 #include <stdexcept>
 #include <iostream>
 
+// Helper function for C++20 compatibility (contains() is C++23)
+static bool string_view_contains(std::string_view str, char c) {
+    return str.find(c) != std::string_view::npos;
+}
+
 
 MovieCollection::MovieCollection(const std::string& name, const std::vector<Movie>* allMovies)
     : collectionName(name), allMoviesRef(allMovies) {
@@ -36,7 +41,7 @@ void MovieCollection::validateCollectionName(std::string_view name) const {
     
     std::string invalidChars = R"(<>:"|?*\/)";
     for (char c : invalidChars) {
-        if (name.find(c) != std::string_view::npos) {
+        if (string_view_contains(name, c)) {
             throw InvalidInputException("Collection name contains invalid characters");
         }
     }
