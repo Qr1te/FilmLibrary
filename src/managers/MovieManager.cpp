@@ -27,26 +27,6 @@ MovieManager::~MovieManager() {
     }
 }
 
-void MovieManager::searchByTitle(const std::string& title) const {
-    auto results = movieService->searchByTitle(title);
-    if (results.empty()) {
-        throw MovieNotFoundException("title: " + title);
-    }
-    for (const auto& movie : results) {
-        movie.print();
-    }
-}
-
-void MovieManager::searchByGenre(const std::string& genre) const {
-    auto results = movieService->searchByGenre(genre);
-    if (results.empty()) {
-        throw MovieNotFoundException("genre: " + genre);
-    }
-    for (const auto& movie : results) {
-        movie.print();
-    }
-}
-
 void MovieManager::addToFavorites(int movieId) {
     favoriteService->addFavorite(movieId);
     std::cout << "Movie added to favorites!\n";
@@ -55,37 +35,6 @@ void MovieManager::addToFavorites(int movieId) {
 void MovieManager::removeFromFavorites(int movieId) {
     favoriteService->removeFavorite(movieId);
     std::cout << "Movie removed from favorites!\n";
-}
-
-void MovieManager::showFavorites() const {
-    auto favorites = favoriteService->getFavoriteMovies();
-    if (favorites.empty()) {
-        std::cout << "No favorite movies yet.\n";
-        return;
-    }
-    std::cout << "=== FAVORITE MOVIES ===\n";
-    for (const auto& movie : favorites) {
-        movie.print();
-    }
-}
-
-void MovieManager::showAllMovies() const {
-    const auto& movies = movieService->getAllMovies();
-    if (movies.empty()) {
-        throw MovieException("No movies available. Create sample movies file first.");
-    }
-    std::cout << "=== ALL MOVIES ===\n";
-    for (const auto& movie : movies) {
-        movie.print();
-    }
-}
-
-void MovieManager::sortByRating() const {
-    if (const auto& movies = movieService->getAllMovies(); movies.empty()) {
-        throw MovieException("No movies to sort");
-    }
-
-    std::cout << "Movies sorted by rating!\n";
 }
 
 std::vector<Movie> MovieManager::sortByRatingResults() const {
@@ -101,45 +50,11 @@ std::vector<Movie> MovieManager::sortByRatingResults() const {
     return movies;
 }
 
-void MovieManager::showTopRated(int count) const {
-    auto topMovies = movieService->topRated(count);
-    std::cout << "=== TOP " << count << " RATED MOVIES ===\n";
-    for (const auto& movie : topMovies) {
-        movie.print();
-    }
-}
-
-void MovieManager::getMovieDetails(int id) const {
-    const Movie* movie = movieService->findById(id);
-    if (!movie) {
-        throw MovieNotFoundException(id);
-    }
-    std::cout << "=== MOVIE DETAILS ===\n";
-    movie->print();
-}
-
 void MovieManager::reloadMovies() {
     movieService->reload();
     favoriteService->reload();
     collectionService->reload();
     collectionService->updateMoviesReference();
-}
-
-void MovieManager::createSampleMoviesFile() {
-    std::ofstream file(moviesFile);
-    if (!file.is_open()) {
-        throw FileNotFoundException(moviesFile);
-    }
-
-    file << "1|The Shawshank Redemption|9.2|1994|Drama|Frank Darabont|Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.|posters/The Shawshank Redemption.png|USA|Tim Robbins, Morgan Freeman|142\n";
-    file << "2|The Godfather|9.2|1972|Crime;Drama|Francis Ford Coppola|The aging patriarch of an organized crime dynasty transfers control to his reluctant son.|posters/The Godfather.png|USA|Marlon Brando, Al Pacino|175\n";
-    file << "3|The Dark Knight|9.0|2008|Action;Crime;Drama|Christopher Nolan|Batman faces the Joker, a criminal mastermind who seeks to undermine society.|posters/The Dark Knight.png|USA|Christian Bale, Heath Ledger|152\n";
-    file << "4|Forrest Gump|8.8|1994|Drama;Romance|Robert Zemeckis|The story of a man with low IQ who accomplished great things in his life.|posters/Forrest Gump.png|USA|Tom Hanks, Robin Wright|142\n";
-    file << "6|Inception|8.7|2010|Sci-Fi;Action;Thriller|Christopher Nolan|A thief who steals corporate secrets through dream-sharing technology is given a chance to have his criminal history erased.|posters/Inception.png|USA;UK|Leonardo DiCaprio, Marion Cotillard|148\n";
-    
-    file.close();
-    movieService->reload();
-    std::cout << "Sample movies file created!\n";
 }
 
 size_t MovieManager::getMoviesCount() const {
@@ -262,9 +177,10 @@ void MovieManager::syncCollectionAdapter() const {
             copyCollectionToAdapter(name, collectionManagerAdapter.get());
         } catch (const CollectionNotFoundException& e) {
             std::cerr << "Warning: Collection not found during adapter sync: " << e.what() << std::endl;
-        } catch (const DuplicateCollectionException&) {
+        } catch (const DuplicateCollectionException& e) {
             // Collection already exists in adapter, this is normal - copyCollectionToAdapter handles it
-            // Just continue to next collection
+            // Log for debugging but don't treat as error
+            (void)e; // Suppress unused variable warning
         } catch (const MovieException& e) {
             std::cerr << "Warning: Error syncing collection adapter: " << e.what() << std::endl;
         }

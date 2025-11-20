@@ -30,18 +30,9 @@ public:
                  std::string  favoritesFile = "favorites.txt");
     ~MovieManager();
 
-    void searchByTitle(const std::string& title) const;
-    void searchByGenre(const std::string& genre) const;
     void addToFavorites(int movieId);
     void removeFromFavorites(int movieId);
-    void showFavorites() const;
-    void showAllMovies() const;
-    void sortByRating() const;
     std::vector<Movie> sortByRatingResults() const;
-    void showTopRated(int count = 10) const;
-    void getMovieDetails(int id) const;
-
-    void createSampleMoviesFile();
     void reloadMovies();
     size_t getMoviesCount() const;
     size_t getFavoritesCount() const;

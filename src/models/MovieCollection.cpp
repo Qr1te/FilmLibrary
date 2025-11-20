@@ -169,8 +169,7 @@ void MovieCollection::load() {
     in.setEncoding(QStringConverter::Encoding::Utf8);
     
     // Read collection name from first line
-    QString line = in.readLine();
-    if (!line.isEmpty()) {
+    if (QString line = in.readLine(); !line.isEmpty()) {
         // Update collection name from file if it was saved there
         bool isNumber = false;
         line.toInt(&isNumber);
@@ -187,23 +186,26 @@ void MovieCollection::load() {
 
     // Read movie IDs
     while (!in.atEnd()) {
-        QString line = in.readLine().trimmed();
-        if (line.isEmpty()) {
+        QString movieLine = in.readLine().trimmed();
+        if (movieLine.isEmpty()) {
             continue;
         }
         
         bool ok = false;
-        int id = line.toInt(&ok);
-        if (ok) {
-            if (allMoviesRef) {
-                bool exists = std::ranges::any_of(*allMoviesRef,
-                                         [id](const Movie& m) { return m.getId() == id; });
-                if (exists) {
-                    movieIds.push_back(id);
-                }
-            } else {
+        int id = movieLine.toInt(&ok);
+        if (!ok) {
+            continue;
+        }
+        
+        // Add movie ID if it exists in allMoviesRef (if reference is set)
+        if (allMoviesRef) {
+            bool exists = std::ranges::any_of(*allMoviesRef,
+                                     [id](const Movie& m) { return m.getId() == id; });
+            if (exists) {
                 movieIds.push_back(id);
             }
+        } else {
+            movieIds.push_back(id);
         }
     }
     
