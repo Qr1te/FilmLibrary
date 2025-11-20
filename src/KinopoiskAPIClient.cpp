@@ -47,8 +47,9 @@ void KinopoiskAPIClient::searchMovie(const QString& title,
     request.setRawHeader("Accept", "application/json");
     request.setRawHeader("X-API-KEY", apiKey.toUtf8());
     
-    const auto* reply = networkManager->get(request);
-    connect(const_cast<QNetworkReply*>(reply), &QNetworkReply::finished, this, &KinopoiskAPIClient::onSearchFinished);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast) - Qt connect() requires non-const pointer
+    auto* reply = networkManager->get(request);
+    connect(reply, &QNetworkReply::finished, this, &KinopoiskAPIClient::onSearchFinished);
 }
 
 void KinopoiskAPIClient::onSearchFinished() {
@@ -116,8 +117,9 @@ void KinopoiskAPIClient::fetchMovieDetails(int movieId) {
     detailRequest.setRawHeader("Accept", "application/json");
     detailRequest.setRawHeader("X-API-KEY", apiKey.toUtf8());
     
-    const auto* detailReply = networkManager->get(detailRequest);
-    connect(const_cast<QNetworkReply*>(detailReply), &QNetworkReply::finished, this, &KinopoiskAPIClient::onDetailFinished);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast) - Qt connect() requires non-const pointer
+    auto* detailReply = networkManager->get(detailRequest);
+    connect(detailReply, &QNetworkReply::finished, this, &KinopoiskAPIClient::onDetailFinished);
 }
 
 void KinopoiskAPIClient::onDetailFinished() const {

@@ -9,7 +9,7 @@
 #include <iostream>
 
 // Helper function for C++20 compatibility (contains() is C++23)
-// NOLINTNEXTLINE(clumsy) - using find() instead of contains() for C++20 compatibility
+// NOLINTNEXTLINE(clumsy, since-c++23) - using find() instead of contains() for C++20 compatibility
 static bool string_view_contains(std::string_view str, char c) {
     return str.find(c) != std::string_view::npos;
 }
