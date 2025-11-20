@@ -9,6 +9,8 @@
 #include <iostream>
 
 
+// Helper function for C++20 compatibility (contains() is C++23)
+// NOSONAR: S6589 - using find() instead of contains() for C++20 compatibility (contains() requires C++23)
 static bool string_view_contains(std::string_view str, char c) {
     return str.find(c) != std::string_view::npos;
 }
@@ -155,9 +157,6 @@ void MovieCollection::load() {
         return;
     }
 
-    if (std::string line; std::getline(file, line)) {
-
-    }
     int id;
     while (file >> id) {
         if (file.fail()) {

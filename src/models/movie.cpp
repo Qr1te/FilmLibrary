@@ -9,10 +9,6 @@
 #include <stdexcept>
 #include <string_view>
 
-static bool string_contains(std::string_view str, char c) {
-    return str.find(c) != std::string_view::npos;
-}
-
 static std::string trim(std::string_view str) {
     size_t first = str.find_first_not_of(" \t\n\r");
     if (first == std::string_view::npos) return "";

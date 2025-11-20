@@ -47,6 +47,7 @@ void KinopoiskAPIClient::searchMovie(const QString& title,
     request.setRawHeader("Accept", "application/json");
     request.setRawHeader("X-API-KEY", apiKey.toUtf8());
     
+    // NOSONAR: S5976 - Qt connect() requires non-const QObject pointer (Qt framework limitation)
     QNetworkReply* reply = networkManager->get(request);
     connect(reply, &QNetworkReply::finished, this, &KinopoiskAPIClient::onSearchFinished);
 }
@@ -116,6 +117,7 @@ void KinopoiskAPIClient::fetchMovieDetails(int movieId) {
     detailRequest.setRawHeader("Accept", "application/json");
     detailRequest.setRawHeader("X-API-KEY", apiKey.toUtf8());
     
+    // NOSONAR: S5976 - Qt connect() requires non-const QObject pointer (Qt framework limitation)
     QNetworkReply* detailReply = networkManager->get(detailRequest);
     connect(detailReply, &QNetworkReply::finished, this, &KinopoiskAPIClient::onDetailFinished);
 }
