@@ -10,6 +10,11 @@ class MovieRepository {
 private:
     std::string moviesFile;
     
+    // Helper functions to reduce complexity
+    bool processFullLine(const std::string& fullLine, int lineNumber, std::vector<Movie>& movies) const;
+    void processRemainingLine(const std::string& fullLine, std::vector<Movie>& movies) const;
+    void setDefaultPosterPath(Movie& movie) const;
+    
 public:
     explicit MovieRepository(const std::string& moviesFile = "movies.txt");
     

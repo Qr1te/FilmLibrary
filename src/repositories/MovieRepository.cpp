@@ -12,6 +12,46 @@ MovieRepository::MovieRepository(const std::string& moviesFile)
     : moviesFile(moviesFile) {
 }
 
+void MovieRepository::setDefaultPosterPath(Movie& movie) const {
+    if (movie.getPosterPath().empty() && movie.getId() > 0) {
+        std::string possiblePath = std::format("posters/{}.jpg", movie.getId());
+        movie.setPosterPath(possiblePath);
+    }
+}
+
+bool MovieRepository::processFullLine(const std::string& fullLine, int lineNumber, std::vector<Movie>& movies) const {
+    try {
+        Movie movie = Movie::fromString(fullLine);
+        if (movie.getId() == 0) {
+            throw InvalidMovieDataException(std::format("Line {}", lineNumber));
+        }
+        
+        setDefaultPosterPath(movie);
+        movies.push_back(movie);
+        return true;
+    } catch (const InvalidMovieDataException& e) {
+        std::cerr << std::format("Warning: Invalid movie data on line {}: {}\n", lineNumber, e.what());
+        return false;
+    } catch (const std::invalid_argument& e) {
+        std::cerr << std::format("Warning: Invalid argument on line {}: {}\n", lineNumber, e.what());
+        return false;
+    }
+}
+
+void MovieRepository::processRemainingLine(const std::string& fullLine, std::vector<Movie>& movies) const {
+    try {
+        Movie movie = Movie::fromString(fullLine);
+        if (movie.getId() != 0) {
+            setDefaultPosterPath(movie);
+            movies.push_back(movie);
+        }
+    } catch (const InvalidMovieDataException& e) {
+        std::cerr << std::format("Warning: Failed to parse movie data: {}\n", e.what());
+    } catch (const std::invalid_argument& e) {
+        std::cerr << std::format("Warning: Parsing error: {}\n", e.what());
+    }
+}
+
 std::vector<Movie> MovieRepository::loadAll() const {
     std::vector<Movie> movies;
     std::ifstream file(moviesFile);
@@ -43,43 +83,16 @@ std::vector<Movie> MovieRepository::loadAll() const {
         
         int pipeCount = std::ranges::count(fullLine, '|');
         if (pipeCount >= 10) {
-            try {
-                Movie movie = Movie::fromString(fullLine);
-                if (movie.getId() != 0) {
-                    if (movie.getPosterPath().empty() && movie.getId() > 0) {
-                        std::string possiblePath = std::format("posters/{}.jpg", movie.getId());
-                        movie.setPosterPath(possiblePath);
-                    }
-                    movies.push_back(movie);
-                    fullLine.clear();
-                } else {
-                    throw InvalidMovieDataException(std::format("Line {}", lineNumber));
-                }
-            } catch (const InvalidMovieDataException& e) {
-                std::cerr << std::format("Warning: Invalid movie data on line {}: {}\n", lineNumber, e.what());
+            if (processFullLine(fullLine, lineNumber, movies)) {
                 fullLine.clear();
-            } catch (const std::invalid_argument& e) {
-                std::cerr << std::format("Warning: Invalid argument on line {}: {}\n", lineNumber, e.what());
+            } else {
                 fullLine.clear();
             }
         }
     }
     
     if (!fullLine.empty()) {
-        try {
-            Movie movie = Movie::fromString(fullLine);
-            if (movie.getId() != 0) {
-                if (movie.getPosterPath().empty() && movie.getId() > 0) {
-                    std::string possiblePath = std::format("posters/{}.jpg", movie.getId());
-                    movie.setPosterPath(possiblePath);
-                }
-                movies.push_back(movie);
-            }
-        } catch (const InvalidMovieDataException& e) {
-            std::cerr << std::format("Warning: Failed to parse movie data: {}\n", e.what());
-        } catch (const std::invalid_argument& e) {
-            std::cerr << std::format("Warning: Parsing error: {}\n", e.what());
-        }
+        processRemainingLine(fullLine, movies);
     }
     
     return movies;

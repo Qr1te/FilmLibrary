@@ -206,6 +206,90 @@ std::string Movie::toString() const {
     return oss.str();
 }
 
+int Movie::parseId(const std::vector<std::string>& tokens) {
+    if (tokens.empty() || tokens[0].empty()) {
+        return 0;
+    }
+    
+    try {
+        return std::stoi(tokens[0]);
+    } catch (const std::invalid_argument&) {
+        return 0;
+    } catch (const std::out_of_range&) {
+        return 0;
+    }
+}
+
+double Movie::parseRating(const std::vector<std::string>& tokens) {
+    if (tokens.size() <= 2 || tokens[2].empty()) {
+        return 0.0;
+    }
+    
+    try {
+        return std::stod(tokens[2]);
+    } catch (const std::invalid_argument&) {
+        return 0.0;
+    } catch (const std::out_of_range&) {
+        return 0.0;
+    }
+}
+
+int Movie::parseYear(const std::vector<std::string>& tokens) {
+    if (tokens.size() <= 3 || tokens[3].empty()) {
+        return 0;
+    }
+    
+    try {
+        return std::stoi(tokens[3]);
+    } catch (const std::invalid_argument&) {
+        return 0;
+    } catch (const std::out_of_range&) {
+        return 0;
+    }
+}
+
+std::vector<std::string> Movie::parseGenres(const std::vector<std::string>& tokens) {
+    std::vector<std::string> genres;
+    
+    if (tokens.size() <= 4) {
+        return genres;
+    }
+    
+    std::string genreStr = tokens[4];
+    if (genreStr.empty()) {
+        return genres;
+    }
+    
+    if (genreStr.find(';') == std::string::npos) {
+        genres.push_back(genreStr);
+        return genres;
+    }
+    
+    std::istringstream genreStream(genreStr);
+    std::string genre;
+    while (std::getline(genreStream, genre, ';')) {
+        if (!genre.empty()) {
+            genres.push_back(genre);
+        }
+    }
+    
+    return genres;
+}
+
+int Movie::parseDuration(const std::vector<std::string>& tokens) {
+    if (tokens.size() <= 10 || tokens[10].empty()) {
+        return 0;
+    }
+    
+    try {
+        return std::stoi(tokens[10]);
+    } catch (const std::invalid_argument&) {
+        return 0;
+    } catch (const std::out_of_range&) {
+        return 0;
+    }
+}
+
 Movie Movie::fromString(const std::string& data) {
     std::istringstream iss(data);
     std::string token;
@@ -216,86 +300,29 @@ Movie Movie::fromString(const std::string& data) {
         tokens.push_back(trimmed);
     }
 
-    if (tokens.size() >= 7) {
-        int id = 0;
-        double rating = 0.0;
-        int year = 0;
-        int duration = 0;
-        
-        try {
-            if (!tokens[0].empty()) {
-                id = std::stoi(tokens[0]);
-            }
-        } catch (const std::invalid_argument&) {
-            return Movie(0, "", 0.0, 0, std::vector<std::string>(), "", "", "", "", "", 0);
-        } catch (const std::out_of_range&) {
-            return Movie(0, "", 0.0, 0, std::vector<std::string>(), "", "", "", "", "", 0);
-        }
-        
-        std::string title = tokens.size() > 1 ? tokens[1] : "";
-        
-        try {
-            if (tokens.size() > 2 && !tokens[2].empty()) {
-                rating = std::stod(tokens[2]);
-            }
-        } catch (const std::invalid_argument&) {
-            rating = 0.0;
-        } catch (const std::out_of_range&) {
-            rating = 0.0;
-        }
-        
-        try {
-            if (tokens.size() > 3 && !tokens[3].empty()) {
-                year = std::stoi(tokens[3]);
-            }
-        } catch (const std::invalid_argument&) {
-            year = 0;
-        } catch (const std::out_of_range&) {
-            year = 0;
-        }
-        
-        std::vector<std::string> genres;
-        if (std::string genreStr = tokens.size() > 4 ? tokens[4] : ""; !genreStr.empty()) {
-            std::istringstream genreStream(genreStr);
-            std::string genre;
-            if (genreStr.find(';') != std::string::npos) {
-                while (std::getline(genreStream, genre, ';')) {
-                    if (!genre.empty()) {
-                        genres.push_back(genre);
-                    }
-                }
-            } else {
-                genres.push_back(genreStr);
-            }
-        }
-        
-        std::string director = tokens.size() > 5 ? tokens[5] : "";
-        std::string description = tokens.size() > 6 ? tokens[6] : "";
-        std::string posterPath = tokens.size() > 7 ? tokens[7] : "";
-        std::string country = tokens.size() > 8 ? tokens[8] : "";
-        std::string actors = tokens.size() > 9 ? tokens[9] : "";
-        
-        if (tokens.size() > 10) {
-            if (!tokens[10].empty()) {
-                try {
-                    duration = std::stoi(tokens[10]);
-                } catch (const std::invalid_argument&) {
-                    duration = 0;
-                } catch (const std::out_of_range&) {
-                    duration = 0;
-                }
-            } else {
-                duration = 0;
-            }
-        } else {
-            duration = 0;
-        }
-        
-        return Movie(id, title, rating, year, genres, director, description,
-                    posterPath, country, actors, duration);
+    if (tokens.size() < 7) {
+        return Movie(0, "", 0.0, 0, std::vector<std::string>(), "", "", "", "", "", 0);
     }
-
-    return Movie(0, "", 0.0, 0, std::vector<std::string>(), "", "", "", "", "", 0);
+    
+    int id = parseId(tokens);
+    if (id == 0) {
+        return Movie(0, "", 0.0, 0, std::vector<std::string>(), "", "", "", "", "", 0);
+    }
+    
+    std::string title = tokens.size() > 1 ? tokens[1] : "";
+    double rating = parseRating(tokens);
+    int year = parseYear(tokens);
+    std::vector<std::string> genres = parseGenres(tokens);
+    
+    std::string director = tokens.size() > 5 ? tokens[5] : "";
+    std::string description = tokens.size() > 6 ? tokens[6] : "";
+    std::string posterPath = tokens.size() > 7 ? tokens[7] : "";
+    std::string country = tokens.size() > 8 ? tokens[8] : "";
+    std::string actors = tokens.size() > 9 ? tokens[9] : "";
+    int duration = parseDuration(tokens);
+    
+    return Movie(id, title, rating, year, genres, director, description,
+                posterPath, country, actors, duration);
 }
 
 bool Movie::operator==(const Movie& other) const {

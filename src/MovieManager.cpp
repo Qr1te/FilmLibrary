@@ -252,7 +252,8 @@ void MovieManager::syncCollectionAdapter() const {
 // Поскольку CollectionManager не имеет виртуальных методов,
 // мы создаем его напрямую и синхронизируем с CollectionService
 CollectionManager* MovieManager::getCollectionManager() {
-    return const_cast<CollectionManager*>(const_cast<const MovieManager*>(this)->getCollectionManager());
+    syncCollectionAdapter();
+    return collectionManagerAdapter.get();
 }
 
 const CollectionManager* MovieManager::getCollectionManager() const {
