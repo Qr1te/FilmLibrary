@@ -18,6 +18,12 @@ private:
     
     // Helper function to check if a string looks garbled
     static bool isGarbled(const QString& str);
+    // Helper function to validate collection name
+    static bool isValidCollectionName(const QString& collectionName);
+    // Helper function to try reading collection name from file with UTF-8 encoding
+    QString tryReadCollectionNameUTF8(QFile& file) const;
+    // Helper function to try reading collection name from file with locale encoding
+    QString tryReadCollectionNameLocale(QFile& file) const;
     // Helper function to try reading collection name from file with different encodings
     QString tryReadCollectionName(QFile& file) const;
     // Helper function to delete corrupted file

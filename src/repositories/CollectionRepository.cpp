@@ -42,8 +42,7 @@ bool CollectionRepository::isGarbled(const QString& str) {
         return true;
     }
     // Check for patterns like "P B", "P'B" which are common in garbled text
-    QString upperStr = str.toUpper();
-    if ((upperStr.contains("P ") && upperStr.contains("B")) ||
+    if (QString upperStr = str.toUpper(); (upperStr.contains("P ") && upperStr.contains("B")) ||
         upperStr.contains("P'B") || upperStr.contains("P B") ||
         upperStr.contains("P B--") || upperStr.contains("P B P") ||
         upperStr.contains("P B P'") || upperStr.contains("P'В") ||
@@ -62,60 +61,68 @@ bool CollectionRepository::isGarbled(const QString& str) {
     return false;
 }
 
-QString CollectionRepository::tryReadCollectionName(QFile& file) const {
-    QString collectionName;
+bool CollectionRepository::isValidCollectionName(const QString& collectionName) {
+    if (collectionName.isEmpty()) {
+        return false;
+    }
     
+    bool isNumber = false;
+    collectionName.toInt(&isNumber);
+    if (isNumber) {
+        return false;
+    }
+    
+    // Count replacement characters () which indicate encoding issues
+    // If more than 10% are replacement chars, it's likely garbled
+    if (int replacementCount = collectionName.count(QChar(0xFFFD)); 
+        replacementCount > collectionName.length() / 10) {
+        return false;
+    }
+    
+    // Check for common garbled patterns using helper function
+    if (isGarbled(collectionName)) {
+        return false;
+    }
+    
+    // Check if name is too short or suspicious
+    if (collectionName.length() < 1) {
+        return false;
+    }
+    
+    // Check for suspicious patterns: many Cyrillic Р followed by spaces or other chars
+    if (collectionName.count("Р ") > 2 || collectionName.count("Р'") > 2 ||
+        collectionName.count("Р вЂ") > 1) {
+        return false;
+    }
+    
+    // Additional check: if name is very short (1-2 chars) and contains only Cyrillic,
+    // it might be a single corrupted character
+    if (collectionName.length() <= 2 && collectionName.toStdString().length() > collectionName.length() * 2) {
+        // UTF-8 encoding issue - single char takes more than 2 bytes
+        return false;
+    }
+    
+    return true;
+}
+
+QString CollectionRepository::tryReadCollectionNameUTF8(QFile& file) const {
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return QString();
+    }
+    
+    QTextStream in(&file);
+    in.setEncoding(QStringConverter::Encoding::Utf8);
+    QString collectionName = in.readLine().trimmed();
+    file.close();
+    
+    if (isValidCollectionName(collectionName)) {
         return collectionName;
     }
     
-    // Try UTF-8 first
-    QTextStream in(&file);
-    in.setEncoding(QStringConverter::Encoding::Utf8);
-    collectionName = in.readLine().trimmed();
-    file.close();
-    
-    // Check if the name looks valid (not just numbers, not garbled)
-    if (!collectionName.isEmpty()) {
-        bool isNumber = false;
-        collectionName.toInt(&isNumber);
-        
-        // Check if name contains mostly valid characters (not too many replacement chars)
-        bool looksValid = !isNumber;
-        if (looksValid) {
-            // Count replacement characters () which indicate encoding issues
-            int replacementCount = collectionName.count(QChar(0xFFFD));
-            // If more than 10% are replacement chars, it's likely garbled
-            if (replacementCount > collectionName.length() / 10) {
-                looksValid = false;
-            }
-            // Check for common garbled patterns using helper function
-            if (isGarbled(collectionName)) {
-                looksValid = false;
-            }
-            // Check if name is too short or suspicious
-            if (collectionName.length() < 1) {
-                looksValid = false;
-            }
-            // Check for suspicious patterns: many Cyrillic Р followed by spaces or other chars
-            if (collectionName.count("Р ") > 2 || collectionName.count("Р'") > 2 ||
-                collectionName.count("Р вЂ") > 1) {
-                looksValid = false;
-            }
-            // Additional check: if name is very short (1-2 chars) and contains only Cyrillic,
-            // it might be a single corrupted character
-            if (collectionName.length() <= 2 && collectionName.toStdString().length() > collectionName.length() * 2) {
-                // UTF-8 encoding issue - single char takes more than 2 bytes
-                looksValid = false;
-            }
-        }
-        
-        if (looksValid) {
-            return collectionName;
-        }
-    }
-    
-    // If UTF-8 didn't work, try reading as binary and interpreting in different encodings
+    return QString();
+}
+
+QString CollectionRepository::tryReadCollectionNameLocale(QFile& file) const {
     if (!file.open(QIODevice::ReadOnly)) {
         return QString();
     }
@@ -126,22 +133,36 @@ QString CollectionRepository::tryReadCollectionName(QFile& file) const {
     // Try to find first line (until \n or \r\n)
     int lineEnd = data.indexOf('\n');
     if (lineEnd < 0) lineEnd = data.indexOf('\r');
-    if (lineEnd > 0) {
-        QByteArray firstLine = data.left(lineEnd).trimmed();
-        
-        // Try system locale encoding (often Windows-1251 on Russian Windows)
-        QString testName = QString::fromLocal8Bit(firstLine);
-        if (!testName.isEmpty() && !testName.contains(QChar(0xFFFD))) {
-            bool isNumber2 = false;
-            testName.toInt(&isNumber2);
-            // More strict validation using helper function
-            if (!isNumber2 && !isGarbled(testName) && testName.length() >= 1) {
-                return testName;
-            }
-        }
+    if (lineEnd <= 0) {
+        return QString();
     }
     
-    return QString();
+    QByteArray firstLine = data.left(lineEnd).trimmed();
+    
+    // Try system locale encoding (often Windows-1251 on Russian Windows)
+    QString testName = QString::fromLocal8Bit(firstLine);
+    if (testName.isEmpty() || testName.contains(QChar(0xFFFD))) {
+        return QString();
+    }
+    
+    bool isNumber = false;
+    testName.toInt(&isNumber);
+    if (isNumber || !isValidCollectionName(testName)) {
+        return QString();
+    }
+    
+    return testName;
+}
+
+QString CollectionRepository::tryReadCollectionName(QFile& file) const {
+    // Try UTF-8 first
+    QString collectionName = tryReadCollectionNameUTF8(file);
+    if (!collectionName.isEmpty()) {
+        return collectionName;
+    }
+    
+    // If UTF-8 didn't work, try reading as binary and interpreting in different encodings
+    return tryReadCollectionNameLocale(file);
 }
 
 void CollectionRepository::deleteCorruptedFile(const QString& filePath) const {
@@ -209,8 +230,10 @@ std::vector<std::string> CollectionRepository::getAllCollectionNames() const {
         }
     } catch (const std::filesystem::filesystem_error& e) {
         std::cerr << "Warning: Filesystem error while getting collection names: " << e.what() << std::endl;
-    } catch (const std::runtime_error& e) {
-        std::cerr << "Warning: Runtime error while getting collection names: " << e.what() << std::endl;
+    } catch (const std::bad_alloc& e) {
+        std::cerr << "Warning: Memory allocation error while getting collection names: " << e.what() << std::endl;
+    } catch (const std::ios_base::failure& e) {
+        std::cerr << "Warning: I/O error while getting collection names: " << e.what() << std::endl;
     }
     
     return names;
