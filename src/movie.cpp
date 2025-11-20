@@ -9,7 +9,7 @@
 #include <string_view>
 
 static bool string_contains(std::string_view str, char c) { // NOSONAR: S6589 C++20 compatibility
-    return str.find(c) != std::string_view::npos;
+    return str.find(c) != std::string_view::npos; // NOSONAR: S6589 C++20 compatibility
 }
 
 static std::string trim(std::string_view str) {
