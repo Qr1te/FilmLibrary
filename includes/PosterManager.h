@@ -35,6 +35,15 @@ private:
     QString findPosterFileByTitle(const QString& movieTitle) const;
     void loadImageToLabel(QLabel* label, const QString& filePath) const;
     void onPosterDownloadFinished(QNetworkReply* reply, const QString& savePath, const std::function<void(bool)>& callback) const;
+    
+    // Helper functions for reducing complexity
+    bool matchesMovieTitle(const QString& baseName, const QString& movieTitle) const;
+    QString detectImageFormat(const QByteArray& imageData) const;
+    QString detectImageExtension(const QByteArray& imageData) const;
+    QImage loadImageFromData(const QByteArray& imageData, QString& detectedFormat) const;
+    bool validateSavedFile(const QString& filePath) const;
+    bool saveImageData(const QByteArray& imageData, const QString& savePath, const QString& fileExtension) const;
+    bool saveImageFromQImage(const QImage& image, const QString& savePath, const QString& imageFormat) const;
 };
 
 #endif // BETA2_POSTERMANAGER_H

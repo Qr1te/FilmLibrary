@@ -148,25 +148,38 @@ QString PosterManager::findPosterFile(int movieId, const QString& posterPath) co
     return "";
 }
 
+bool PosterManager::matchesMovieTitle(const QString& baseName, const QString& movieTitle) const {
+    QString normalizedBaseName = baseName.toLower().remove(' ').remove('-').remove('_').remove('\'');
+    QString normalizedTitle = movieTitle.toLower().remove(' ').remove('-').remove('_').remove('\'');
+    
+    if (normalizedBaseName == normalizedTitle) {
+        return true;
+    }
+    if (normalizedBaseName.contains(normalizedTitle) || normalizedTitle.contains(normalizedBaseName)) {
+        return true;
+    }
+    if (baseName.toLower().contains(movieTitle.toLower()) || movieTitle.toLower().contains(baseName.toLower())) {
+        return true;
+    }
+    return false;
+}
+
 QString PosterManager::findPosterFileByTitle(const QString& movieTitle) const {
     QStringList searchDirs = getSearchDirectories();
+    QStringList validDirs = getValidDirectories(searchDirs);
     
-    if (QStringList validDirs = getValidDirectories(searchDirs); !validDirs.isEmpty()) {
-        for (const QString& dir : validDirs) {
-            QDir searchDir(dir);
-            QFileInfoList files = searchDir.entryInfoList(QStringList() << "*.png" << "*.jpg" << "*.jpeg", QDir::Files);
-            for (const QFileInfo& fileInfo : files) {
-                QString baseName = fileInfo.baseName();
-                QString normalizedBaseName = baseName.toLower().remove(' ').remove('-').remove('_').remove('\'');
-                QString normalizedTitle = movieTitle.toLower().remove(' ').remove('-').remove('_').remove('\'');
-                
-                if (normalizedBaseName == normalizedTitle ||
-                    normalizedBaseName.contains(normalizedTitle) || 
-                    normalizedTitle.contains(normalizedBaseName) ||
-                    baseName.toLower().contains(movieTitle.toLower()) ||
-                    movieTitle.toLower().contains(baseName.toLower())) {
-                    return fileInfo.absoluteFilePath();
-                }
+    if (validDirs.isEmpty()) {
+        return "";
+    }
+    
+    for (const QString& dir : validDirs) {
+        QDir searchDir(dir);
+        QFileInfoList files = searchDir.entryInfoList(QStringList() << "*.png" << "*.jpg" << "*.jpeg", QDir::Files);
+        
+        for (const QFileInfo& fileInfo : files) {
+            QString baseName = fileInfo.baseName();
+            if (matchesMovieTitle(baseName, movieTitle)) {
+                return fileInfo.absoluteFilePath();
             }
         }
     }
@@ -278,79 +291,162 @@ void PosterManager::downloadPoster(const QString& posterUrl, const QString& save
     });
 }
 
+QString PosterManager::detectImageFormat(const QByteArray& imageData) const {
+    QByteArray jpegHeader = QByteArray::fromHex("FFD8FF");
+    QByteArray pngHeader = QByteArray::fromHex("89") + "PNG";
+    
+    if (imageData.startsWith(jpegHeader)) {
+        return "JPEG";
+    }
+    if (imageData.startsWith(pngHeader)) {
+        return "PNG";
+    }
+    if (imageData.startsWith("GIF")) {
+        return "GIF";
+    }
+    if (imageData.startsWith("BM")) {
+        return "BMP";
+    }
+    return "JPEG"; // default
+}
+
+QString PosterManager::detectImageExtension(const QByteArray& imageData) const {
+    QByteArray jpegHeader = QByteArray::fromHex("FFD8FF");
+    QByteArray pngHeader = QByteArray::fromHex("89") + "PNG";
+    
+    if (imageData.startsWith(jpegHeader)) {
+        return "jpg";
+    }
+    if (imageData.startsWith(pngHeader)) {
+        return "png";
+    }
+    if (imageData.startsWith("GIF")) {
+        return "gif";
+    }
+    if (imageData.startsWith("BM")) {
+        return "bmp";
+    }
+    return "jpg"; // default
+}
+
+QImage PosterManager::loadImageFromData(const QByteArray& imageData, QString& detectedFormat) const {
+    QImage image;
+    QString initialFormat = detectedFormat;
+    
+    if (image.loadFromData(imageData) || image.loadFromData(imageData, initialFormat.toUtf8().constData())) {
+        return image;
+    }
+    
+    QStringList formats = {"JPEG", "JPG", "PNG", "GIF", "BMP"};
+    for (const QString& fmt : formats) {
+        if (image.loadFromData(imageData, fmt.toUtf8().constData())) {
+            detectedFormat = fmt;
+            return image;
+        }
+    }
+    
+    return QImage();
+}
+
+bool PosterManager::validateSavedFile(const QString& filePath) const {
+    QImage testImage;
+    if (testImage.load(filePath)) {
+        return true;
+    }
+    if (QFile::exists(filePath) && QFileInfo(filePath).size() > 0) {
+        return true;
+    }
+    return false;
+}
+
+bool PosterManager::saveImageData(const QByteArray& imageData, const QString& savePath, const QString& fileExtension) const {
+    QFileInfo pathInfo(savePath);
+    QString sep = QDir::separator();
+    QString correctPath = pathInfo.path() + sep + pathInfo.baseName() + "." + fileExtension;
+    
+    QFile file(correctPath);
+    if (!file.open(QIODevice::WriteOnly)) {
+        return false;
+    }
+    
+    qint64 bytesWritten = file.write(imageData);
+    file.close();
+    
+    if (bytesWritten <= 0 || bytesWritten != imageData.size()) {
+        return false;
+    }
+    
+    file.flush();
+    QThread::msleep(50);
+    
+    return validateSavedFile(correctPath);
+}
+
+bool PosterManager::saveImageFromQImage(const QImage& image, const QString& savePath, const QString& imageFormat) const {
+    if (image.isNull()) {
+        return false;
+    }
+    
+    QFileInfo pathInfo(savePath);
+    QString sep = QDir::separator();
+    QString fileExtension = "jpg"; // default
+    
+    if (imageFormat == "PNG") {
+        fileExtension = "png";
+    } else if (imageFormat == "GIF") {
+        fileExtension = "gif";
+    } else if (imageFormat == "BMP") {
+        fileExtension = "bmp";
+    }
+    
+    QString correctPath = pathInfo.path() + sep + pathInfo.baseName() + "." + fileExtension;
+    
+    QFile file(correctPath);
+    if (!file.open(QIODevice::WriteOnly)) {
+        return false;
+    }
+    
+    QString saveFormat = imageFormat;
+    if (saveFormat == "JPG") {
+        saveFormat = "JPEG";
+    }
+    
+    bool saved = image.save(&file, saveFormat.toUtf8().constData());
+    file.close();
+    
+    return saved;
+}
+
 void PosterManager::onPosterDownloadFinished(QNetworkReply* reply, const QString& savePath, const std::function<void(bool)>& callback) const {
     bool success = false;
     
-    if (reply->error() == QNetworkReply::NoError) {
-        QByteArray imageData = reply->readAll();
-        
-        if (!imageData.isEmpty()) {
-            QString imageFormat = "JPEG";
-            QString fileExtension = "jpg";
-            QByteArray jpegHeader = QByteArray::fromHex("FFD8FF");
-            QByteArray pngHeader = QByteArray::fromHex("89") + "PNG";
-            if (imageData.startsWith(jpegHeader)) {
-                imageFormat = "JPEG";
-                fileExtension = "jpg";
-            } else if (imageData.startsWith(pngHeader)) {
-                imageFormat = "PNG";
-                fileExtension = "png";
-            } else if (imageData.startsWith("GIF")) {
-                imageFormat = "GIF";
-                fileExtension = "gif";
-            } else if (imageData.startsWith("BM")) {
-                imageFormat = "BMP";
-                fileExtension = "bmp";
-            }
-            
-            QImage image;
-            if (!image.loadFromData(imageData) && !image.loadFromData(imageData, imageFormat.toUtf8().constData())) {
-                QStringList formats = {"JPEG", "JPG", "PNG", "GIF", "BMP"};
-                for (const QString& fmt : formats) {
-                    if (image.loadFromData(imageData, fmt.toUtf8().constData())) {
-                        imageFormat = fmt;
-                        break;
-                    }
-                }
-            }
-            
-            QFileInfo pathInfo(savePath);
-            QString sep = QDir::separator();
-            QString correctPath = pathInfo.path() + sep + pathInfo.baseName() + "." + fileExtension;
-            
-            if (QFile file(correctPath); file.open(QIODevice::WriteOnly)) {
-                qint64 bytesWritten = file.write(imageData);
-                file.close();
-                
-                if (bytesWritten > 0 && bytesWritten == imageData.size()) {
-                    file.flush();
-                    QThread::msleep(50);
-                    
-                    QImage testImage;
-                    if (testImage.load(correctPath)) {
-                        success = true;
-                    } else if (QFile::exists(correctPath) && QFileInfo(correctPath).size() > 0) {
-                        success = true;
-                    }
-                }
-            }
-            
-            if (!success && !image.isNull()) {
-                QFile file2(correctPath);
-                if (file2.open(QIODevice::WriteOnly)) {
-                    QString saveFormat = imageFormat;
-                    if (saveFormat == "JPG") {
-                        saveFormat = "JPEG";
-                    }
-                    if (image.save(&file2, saveFormat.toUtf8().constData())) {
-                        file2.close();
-                        success = true;
-                    } else {
-                        file2.close();
-                    }
-                }
-            }
-        }
+    if (reply->error() != QNetworkReply::NoError) {
+        reply->deleteLater();
+        if (callback) callback(false);
+        return;
+    }
+    
+    QByteArray imageData = reply->readAll();
+    if (imageData.isEmpty()) {
+        reply->deleteLater();
+        if (callback) callback(false);
+        return;
+    }
+    
+    QString imageFormat = detectImageFormat(imageData);
+    QString fileExtension = detectImageExtension(imageData);
+    
+    QImage image;
+    QString detectedFormat = imageFormat;
+    image = loadImageFromData(imageData, detectedFormat);
+    if (!detectedFormat.isEmpty()) {
+        imageFormat = detectedFormat;
+    }
+    
+    success = saveImageData(imageData, savePath, fileExtension);
+    
+    if (!success && !image.isNull()) {
+        success = saveImageFromQImage(image, savePath, imageFormat);
     }
     
     reply->deleteLater();

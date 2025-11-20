@@ -850,3 +850,4 @@ void MainWindow::handleDeleteCollection() {
 }
 
 
+
