@@ -156,8 +156,7 @@ QString CollectionRepository::tryReadCollectionNameLocale(QFile& file) const {
 
 QString CollectionRepository::tryReadCollectionName(QFile& file) const {
     // Try UTF-8 first
-    QString collectionName = tryReadCollectionNameUTF8(file);
-    if (!collectionName.isEmpty()) {
+    if (QString collectionName = tryReadCollectionNameUTF8(file); !collectionName.isEmpty()) {
         return collectionName;
     }
     
@@ -203,11 +202,8 @@ std::vector<std::string> CollectionRepository::getAllCollectionNames() const {
             QString filePath = fileInfo.absoluteFilePath();
             QFile file(filePath);
             
-            QString collectionName = tryReadCollectionName(file);
-            bool nameFromFile = !collectionName.isEmpty();
-            
             // Use name from file if valid
-            if (nameFromFile) {
+            if (QString collectionName = tryReadCollectionName(file); !collectionName.isEmpty()) {
                 QByteArray utf8 = collectionName.toUtf8();
                 names.emplace_back(utf8.constData(), utf8.length());
             } else {
