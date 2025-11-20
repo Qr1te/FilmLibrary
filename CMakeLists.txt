@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.29)
 project(beta2)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
@@ -66,7 +66,7 @@ add_executable(beta2 src/main.cpp
         src/ui/MovieCardFactory.cpp
         includes/ui/MovieCardFactory.h)
 
-# Add includes directory to include path
+
 target_include_directories(beta2 PRIVATE ${CMAKE_SOURCE_DIR}/includes)
 
 target_link_libraries(beta2
@@ -143,8 +143,7 @@ if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
     endif()
     
-           # Копируем SSL плагины
-           if (EXISTS "${QT_INSTALL_PATH}/plugins/tls")
+        if (EXISTS "${QT_INSTALL_PATH}/plugins/tls")
                add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E make_directory
                        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/tls")
@@ -154,8 +153,7 @@ if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
                        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/tls")
            endif()
            
-           # Копируем плагины для форматов изображений (JPEG, PNG и т.д.)
-           if (EXISTS "${QT_INSTALL_PATH}/plugins/imageformats")
+        if (EXISTS "${QT_INSTALL_PATH}/plugins/imageformats")
                add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E make_directory
                        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/imageformats")

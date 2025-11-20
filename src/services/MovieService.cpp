@@ -3,9 +3,8 @@
 #include <ranges>
 #include <cctype>
 
-// NOSONAR: S6589
 static bool string_contains(std::string_view str, std::string_view substr) {
-    return str.find(substr) != std::string_view::npos;
+    return str.contains(substr);
 }
 
 MovieService::MovieService(const std::string& moviesFile)

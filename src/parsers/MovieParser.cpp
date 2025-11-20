@@ -4,9 +4,8 @@
 #include <stdexcept>
 #include <string_view>
 
-// NOSONAR: S6589
 static bool string_contains(std::string_view str, char c) {
-    return str.find(c) != std::string_view::npos;
+    return str.contains(c);
 }
 
 int MovieParser::parseId(const std::vector<std::string>& tokens) {
