@@ -255,6 +255,24 @@ void CollectionManager::saveAll() const {
     }
 }
 
+std::string CollectionManager::extractCollectionName(const std::filesystem::path& filepath) const {
+    std::ifstream file(filepath.string(), std::ios::binary);
+    std::string collectionName;
+    if (file.is_open() && std::getline(file, collectionName)) {
+        if (!collectionName.empty()) {
+            return collectionName;
+        }
+    }
+    
+    std::string filename = filepath.filename().string();
+    collectionName = filename.substr(0, filename.length() - 4);
+    std::ranges::replace(collectionName, '_', ' ');
+    if (!collectionName.empty()) {
+        collectionName[0] = static_cast<char>(::toupper(collectionName[0]));
+    }
+    return collectionName;
+}
+
 void CollectionManager::loadAll() {
     try {
         if (!std::filesystem::exists(collectionsDirectory)) {
@@ -262,35 +280,19 @@ void CollectionManager::loadAll() {
         }
         
         for (const auto& entry : std::filesystem::directory_iterator(collectionsDirectory)) {
-            if (entry.is_regular_file() && entry.path().extension() == ".txt") {
-                std::string filepath = entry.path().string();
-                
-                std::ifstream file(filepath, std::ios::binary);
-                std::string collectionName;
-                if (file.is_open() && std::getline(file, collectionName)) {
-                    if (collectionName.empty()) {
-                        std::string filename = entry.path().filename().string();
-                        collectionName = filename.substr(0, filename.length() - 4);
-                        std::ranges::replace(collectionName, '_', ' ');
-                        if (!collectionName.empty()) {
-                            collectionName[0] = static_cast<char>(::toupper(collectionName[0]));
-                        }
-                    }
-                } else {
-                    std::string filename = entry.path().filename().string();
-                    collectionName = filename.substr(0, filename.length() - 4);
-                    std::ranges::replace(collectionName, '_', ' ');
-                    if (!collectionName.empty()) {
-                        collectionName[0] = static_cast<char>(::toupper(collectionName[0]));
-                    }
-                }
-                
-                if (!collectionName.empty()) {
-                    auto collection = std::make_unique<MovieCollection>(collectionName, allMoviesRef);
-                    collection->load();
-                    collections[collectionName] = std::move(collection);
-                }
+            if (!entry.is_regular_file() || entry.path().extension() != ".txt") {
+                continue;
             }
+            
+            std::string collectionName = extractCollectionName(entry.path());
+            
+            if (collectionName.empty()) {
+                continue;
+            }
+            
+            auto collection = std::make_unique<MovieCollection>(collectionName, allMoviesRef);
+            collection->load();
+            collections[collectionName] = std::move(collection);
         }
     } catch (const std::filesystem::filesystem_error& e) {
         std::cerr << "Warning: Filesystem error while loading collections: " << e.what() << std::endl;

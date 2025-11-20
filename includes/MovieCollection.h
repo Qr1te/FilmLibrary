@@ -12,6 +12,7 @@
 #include <ranges>
 #include <set>
 #include <map>
+#include <filesystem>
 
 class IMovieCollection {
 public:
@@ -141,6 +142,9 @@ public:
     void loadAll();
     
     void updateAllMoviesRef(const std::vector<Movie>* movies);
+    
+private:
+    std::string extractCollectionName(const std::filesystem::path& filepath) const;
 };
 
 #endif

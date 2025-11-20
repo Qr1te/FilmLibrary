@@ -19,6 +19,11 @@ private:
     std::unique_ptr<CollectionService> collectionService;
     std::string moviesFile;
     std::string favoritesFile;
+    
+    mutable std::unique_ptr<CollectionManager> collectionManagerAdapter;
+    
+    void syncCollectionAdapter() const;
+    void copyCollectionToAdapter(const std::string& name, CollectionManager* adapter) const;
 
 public:
     explicit MovieManager(std::string  moviesFile = "movies.txt",

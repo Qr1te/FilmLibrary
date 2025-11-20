@@ -119,35 +119,10 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
     auto* buttonsLayout = new QHBoxLayout();
     buttonsLayout->setSpacing(5);
     
-    auto* playBtn = new QPushButton("▶");
-    playBtn->setFixedSize(35, 35);
-    playBtn->setToolTip("Открыть на Кинопоиске");
-    playBtn->setStyleSheet(
-        "background-color: #46d369;"
-        "color: white; font-size: 16px; font-weight: bold; border-radius: 4px; border: none;"
-    );
-    playBtn->setCursor(Qt::PointingHandCursor);
-    
-    auto* favoriteBtn = new QPushButton("★");
-    favoriteBtn->setFixedSize(35, 35);
-    favoriteBtn->setToolTip("Добавить в избранное");
-    if (bool isFav = movieManager->isFavorite(movie.getId()); isFav) {
-        favoriteBtn->setStyleSheet("background-color: #ffd700; color: #000; font-size: 18px; font-weight: bold; border-radius: 4px; border: none;");
-    } else {
-        favoriteBtn->setStyleSheet("background-color: #555; color: #ccc; font-size: 18px; border-radius: 4px; border: 1px solid #777;");
-    }
-    
-    auto* moreBtn = new QPushButton("⋯");
-    moreBtn->setFixedSize(35, 35);
-    moreBtn->setToolTip("Дополнительные опции");
-    moreBtn->setStyleSheet("background-color: #555; color: #ccc; font-size: 22px; border-radius: 4px; border: 1px solid #777;");
-    
-    auto* infoBtn = new QPushButton("Информация");
-    infoBtn->setStyleSheet(
-        "background-color: #ff6b35;"
-        "color: white; font-weight: bold; padding: 8px; border-radius: 4px; border: none;"
-        "min-width: 100px;"
-    );
+    QPushButton* playBtn = createPlayButton();
+    QPushButton* favoriteBtn = createFavoriteButton(movie);
+    QPushButton* moreBtn = createMoreButton();
+    QPushButton* infoBtn = createInfoButton();
 
     buttonsLayout->addWidget(playBtn);
     buttonsLayout->addWidget(favoriteBtn);
@@ -160,6 +135,158 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
 
     card->setProperty("movieId", movie.getId());
     
+    setupButtonConnections(card, playBtn, favoriteBtn, moreBtn, infoBtn, movie);
+
+    return card;
+}
+
+void MovieCardFactory::handleMoreButtonClicked(const Movie& movie, const QPushButton* moreBtn) const {
+    QMenu menu;
+    auto addToCollectionAction = const_cast<const QAction*>(menu.addAction("Добавить в коллекцию"));
+    
+    const auto* collManager = movieManager->getCollectionManager();
+    QStringList collectionsWithMovie;
+    if (collManager) {
+        auto allCollections = movieManager->getAllCollectionNames();
+        for (const auto& name : allCollections) {
+            const MovieCollection* collection = collManager->getCollection(name);
+            if (collection && collection->containsMovie(movie.getId())) {
+                collectionsWithMovie << QString::fromUtf8(name.c_str(), name.length());
+            }
+        }
+    }
+    
+    const QAction* removeFromCollectionAction = nullptr;
+    if (!collectionsWithMovie.isEmpty()) {
+        menu.addSeparator();
+        removeFromCollectionAction = const_cast<const QAction*>(menu.addAction("Удалить из коллекции"));
+    }
+    
+    menu.addSeparator();
+    auto deleteMovieAction = const_cast<const QAction*>(menu.addAction("Удалить фильм"));
+    
+    auto selectedAction = const_cast<const QAction*>(menu.exec(moreBtn->mapToGlobal(QPoint(0, moreBtn->height()))));
+    
+    if (selectedAction == addToCollectionAction) {
+        handleAddToCollection(movie);
+    } else if (selectedAction == removeFromCollectionAction) {
+        handleRemoveFromCollection(movie, collectionsWithMovie);
+    } else if (selectedAction == deleteMovieAction) {
+        handleDeleteMovie(movie);
+    }
+}
+
+void MovieCardFactory::handleAddToCollection(const Movie& movie) const {
+    auto collections = movieManager->getAllCollectionNames();
+    if (collections.empty()) {
+        QMessageBox::information(nullptr, "Коллекции", "Сначала создайте коллекцию через меню.");
+        return;
+    }
+    
+    QStringList items;
+    for (const auto& name : collections) {
+        items << QString::fromUtf8(name.c_str(), name.length());
+    }
+    bool ok;
+    QString selected = QInputDialog::getItem(nullptr, "Выбор коллекции",
+                                            "Выберите коллекцию:", items, 0, false, &ok);
+    if (!ok || selected.isEmpty()) {
+        return;
+    }
+    
+    auto* collManager = movieManager->getCollectionManager();
+    if (auto* collection = collManager ? collManager->getCollection(qStringToStdString(selected)) : nullptr; collection) {
+        try {
+            collection->addMovie(movie);
+            QMessageBox::information(nullptr, "Успех", 
+                QString("Фильм добавлен в коллекцию '%1'").arg(selected));
+            if (onCollectionsChanged) onCollectionsChanged();
+        } catch (const DuplicateFavoriteException& e) {
+            handleCollectionException(e);
+        } catch (const MovieNotFoundException& e) {
+            handleCollectionException(e);
+        } catch (const MovieException& e) {
+            handleCollectionException(e);
+        }
+    }
+}
+
+void MovieCardFactory::handleRemoveFromCollection(const Movie& movie, const QStringList& collectionsWithMovie) const {
+    QString collectionName;
+    if (collectionsWithMovie.size() == 1) {
+        collectionName = collectionsWithMovie.first();
+    } else {
+        bool ok;
+        QString selected = QInputDialog::getItem(nullptr, "Удаление из коллекции",
+                                                "Выберите коллекцию, из которой удалить фильм:", 
+                                                collectionsWithMovie, 0, false, &ok);
+        if (!ok || selected.isEmpty()) {
+            return;
+        }
+        collectionName = selected;
+    }
+    
+    auto* collManager = movieManager->getCollectionManager();
+    if (auto* collection = collManager ? collManager->getCollection(qStringToStdString(collectionName)) : nullptr; collection) {
+        try {
+            collection->removeMovie(movie.getId());
+            QMessageBox::information(nullptr, "Успех", 
+                QString("Фильм удален из коллекции '%1'").arg(collectionName));
+            if (onCollectionsChanged) onCollectionsChanged();
+        } catch (const DuplicateFavoriteException& e) {
+            handleCollectionException(e);
+        } catch (const MovieNotFoundException& e) {
+            handleCollectionException(e);
+        } catch (const MovieException& e) {
+            handleCollectionException(e);
+        }
+    }
+}
+
+QPushButton* MovieCardFactory::createPlayButton() const {
+    auto* playBtn = new QPushButton("▶");
+    playBtn->setFixedSize(35, 35);
+    playBtn->setToolTip("Открыть на Кинопоиске");
+    playBtn->setStyleSheet(
+        "background-color: #46d369;"
+        "color: white; font-size: 16px; font-weight: bold; border-radius: 4px; border: none;"
+    );
+    playBtn->setCursor(Qt::PointingHandCursor);
+    return playBtn;
+}
+
+QPushButton* MovieCardFactory::createFavoriteButton(const Movie& movie) const {
+    auto* favoriteBtn = new QPushButton("★");
+    favoriteBtn->setFixedSize(35, 35);
+    favoriteBtn->setToolTip("Добавить в избранное");
+    if (bool isFav = movieManager->isFavorite(movie.getId()); isFav) {
+        favoriteBtn->setStyleSheet("background-color: #ffd700; color: #000; font-size: 18px; font-weight: bold; border-radius: 4px; border: none;");
+    } else {
+        favoriteBtn->setStyleSheet("background-color: #555; color: #ccc; font-size: 18px; border-radius: 4px; border: 1px solid #777;");
+    }
+    return favoriteBtn;
+}
+
+QPushButton* MovieCardFactory::createMoreButton() const {
+    auto* moreBtn = new QPushButton("⋯");
+    moreBtn->setFixedSize(35, 35);
+    moreBtn->setToolTip("Дополнительные опции");
+    moreBtn->setStyleSheet("background-color: #555; color: #ccc; font-size: 22px; border-radius: 4px; border: 1px solid #777;");
+    return moreBtn;
+}
+
+QPushButton* MovieCardFactory::createInfoButton() const {
+    auto* infoBtn = new QPushButton("Информация");
+    infoBtn->setStyleSheet(
+        "background-color: #ff6b35;"
+        "color: white; font-weight: bold; padding: 8px; border-radius: 4px; border: none;"
+        "min-width: 100px;"
+    );
+    return infoBtn;
+}
+
+void MovieCardFactory::setupButtonConnections(QWidget* card, QPushButton* playBtn, QPushButton* favoriteBtn, 
+                                              QPushButton* moreBtn, QPushButton* infoBtn, const Movie& movie) const {
     QObject::connect(playBtn, &QPushButton::clicked, [movie]() {
         int movieId = movie.getId();
         if (movieId > 0) {
@@ -198,114 +325,9 @@ QWidget* MovieCardFactory::createMovieCard(const Movie& movie, QWidget* parent) 
             onShowInfo(movie);
         }
     });
-
-    return card;
 }
 
-void MovieCardFactory::handleMoreButtonClicked(const Movie& movie, const QPushButton* moreBtn) {
-    QMenu menu;
-    auto addToCollectionAction = const_cast<const QAction*>(menu.addAction("Добавить в коллекцию"));
-    
-    const auto* collManager = movieManager->getCollectionManager();
-    QStringList collectionsWithMovie;
-    if (collManager) {
-        auto allCollections = movieManager->getAllCollectionNames();
-        for (const auto& name : allCollections) {
-            const MovieCollection* collection = collManager->getCollection(name);
-            if (collection && collection->containsMovie(movie.getId())) {
-                collectionsWithMovie << QString::fromUtf8(name.c_str(), name.length());
-            }
-        }
-    }
-    
-    const QAction* removeFromCollectionAction = nullptr;
-    if (!collectionsWithMovie.isEmpty()) {
-        menu.addSeparator();
-        removeFromCollectionAction = const_cast<const QAction*>(menu.addAction("Удалить из коллекции"));
-    }
-    
-    menu.addSeparator();
-    auto deleteMovieAction = const_cast<const QAction*>(menu.addAction("Удалить фильм"));
-    
-    auto selectedAction = const_cast<const QAction*>(menu.exec(moreBtn->mapToGlobal(QPoint(0, moreBtn->height()))));
-    
-    if (selectedAction == addToCollectionAction) {
-        handleAddToCollection(movie);
-    } else if (selectedAction == removeFromCollectionAction) {
-        handleRemoveFromCollection(movie, collectionsWithMovie);
-    } else if (selectedAction == deleteMovieAction) {
-        handleDeleteMovie(movie);
-    }
-}
-
-void MovieCardFactory::handleAddToCollection(const Movie& movie) {
-    auto collections = movieManager->getAllCollectionNames();
-    if (collections.empty()) {
-        QMessageBox::information(nullptr, "Коллекции", "Сначала создайте коллекцию через меню.");
-        return;
-    }
-    
-    QStringList items;
-    for (const auto& name : collections) {
-        items << QString::fromUtf8(name.c_str(), name.length());
-    }
-    bool ok;
-    QString selected = QInputDialog::getItem(nullptr, "Выбор коллекции",
-                                            "Выберите коллекцию:", items, 0, false, &ok);
-    if (!ok || selected.isEmpty()) {
-        return;
-    }
-    
-    auto* collManager = movieManager->getCollectionManager();
-    if (auto* collection = collManager ? collManager->getCollection(qStringToStdString(selected)) : nullptr; collection) {
-        try {
-            collection->addMovie(movie);
-            QMessageBox::information(nullptr, "Успех", 
-                QString("Фильм добавлен в коллекцию '%1'").arg(selected));
-            if (onCollectionsChanged) onCollectionsChanged();
-        } catch (const DuplicateFavoriteException& e) {
-            handleCollectionException(e);
-        } catch (const MovieNotFoundException& e) {
-            handleCollectionException(e);
-        } catch (const MovieException& e) {
-            handleCollectionException(e);
-        }
-    }
-}
-
-void MovieCardFactory::handleRemoveFromCollection(const Movie& movie, const QStringList& collectionsWithMovie) {
-    QString collectionName;
-    if (collectionsWithMovie.size() == 1) {
-        collectionName = collectionsWithMovie.first();
-    } else {
-        bool ok;
-        QString selected = QInputDialog::getItem(nullptr, "Удаление из коллекции",
-                                                "Выберите коллекцию, из которой удалить фильм:", 
-                                                collectionsWithMovie, 0, false, &ok);
-        if (!ok || selected.isEmpty()) {
-            return;
-        }
-        collectionName = selected;
-    }
-    
-    auto* collManager = movieManager->getCollectionManager();
-    if (auto* collection = collManager ? collManager->getCollection(qStringToStdString(collectionName)) : nullptr; collection) {
-        try {
-            collection->removeMovie(movie.getId());
-            QMessageBox::information(nullptr, "Успех", 
-                QString("Фильм удален из коллекции '%1'").arg(collectionName));
-            if (onCollectionsChanged) onCollectionsChanged();
-        } catch (const DuplicateFavoriteException& e) {
-            handleCollectionException(e);
-        } catch (const MovieNotFoundException& e) {
-            handleCollectionException(e);
-        } catch (const MovieException& e) {
-            handleCollectionException(e);
-        }
-    }
-}
-
-void MovieCardFactory::handleDeleteMovie(const Movie& movie) {
+void MovieCardFactory::handleDeleteMovie(const Movie& movie) const {
     if (int ret = QMessageBox::question(nullptr, "Удаление фильма",
                                     QString("Вы уверены, что хотите удалить '%1'?\n\nЭто действие нельзя отменить.")
                                     .arg(QString::fromStdString(movie.getTitle())),

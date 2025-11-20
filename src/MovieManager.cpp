@@ -212,45 +212,52 @@ void MovieManager::removeMovie(int movieId) {
     collectionService->updateMoviesReference();
 }
 
+void MovieManager::copyCollectionToAdapter(const std::string& name, CollectionManager* adapter) const {
+    const MovieCollection* coll = collectionService->getCollection(name);
+    if (!coll) {
+        return;
+    }
+    
+    adapter->createCollection(name);
+    MovieCollection* adapterColl = adapter->getCollection(name);
+    if (!adapterColl) {
+        return;
+    }
+    
+    auto movies = coll->getMovies();
+    for (const auto& movie : movies) {
+        adapterColl->addMovie(movie);
+    }
+}
+
+void MovieManager::syncCollectionAdapter() const {
+    if (!collectionManagerAdapter) {
+        collectionManagerAdapter = std::make_unique<CollectionManager>(&movieService->getAllMovies());
+    }
+    
+    auto names = collectionService->getAllCollectionNames();
+    for (const auto& name : names) {
+        try {
+            copyCollectionToAdapter(name, collectionManagerAdapter.get());
+        } catch (const CollectionNotFoundException& e) {
+            std::cerr << "Warning: Collection not found during adapter sync: " << e.what() << std::endl;
+        } catch (const MovieException& e) {
+            std::cerr << "Warning: Error syncing collection adapter: " << e.what() << std::endl;
+        }
+    }
+}
+
 // Для обратной совместимости создаем обертку CollectionManager
 // которая использует CollectionService внутри
 // Поскольку CollectionManager не имеет виртуальных методов,
 // мы создаем его напрямую и синхронизируем с CollectionService
 CollectionManager* MovieManager::getCollectionManager() {
-    // Создаем CollectionManager на основе CollectionService
-    // Это временное решение для обратной совместимости
-    static std::unique_ptr<CollectionManager> adapter;
-    if (!adapter) {
-        adapter = std::make_unique<CollectionManager>(&movieService->getAllMovies());
-        // Синхронизируем коллекции
-        auto names = collectionService->getAllCollectionNames();
-        for (const auto& name : names) {
-            try {
-                const MovieCollection* coll = const_cast<const CollectionService*>(collectionService.get())->getCollection(name);
-                if (coll) {
-                    // Создаем коллекцию в адаптере
-                    adapter->createCollection(name);
-                    MovieCollection* adapterColl = adapter->getCollection(name);
-                    if (adapterColl && coll) {
-                        // Копируем фильмы
-                        auto movies = coll->getMovies();
-                        for (const auto& movie : movies) {
-                            adapterColl->addMovie(movie);
-                        }
-                    }
-                }
-            } catch (const CollectionNotFoundException& e) {
-                std::cerr << "Warning: Collection not found during adapter sync: " << e.what() << std::endl;
-            } catch (const MovieException& e) {
-                std::cerr << "Warning: Error syncing collection adapter: " << e.what() << std::endl;
-            }
-        }
-    }
-    return adapter.get();
+    return const_cast<CollectionManager*>(const_cast<const MovieManager*>(this)->getCollectionManager());
 }
 
 const CollectionManager* MovieManager::getCollectionManager() const {
-    return const_cast<MovieManager*>(this)->getCollectionManager();
+    syncCollectionAdapter();
+    return collectionManagerAdapter.get();
 }
 
 MovieService* MovieManager::getMovieService() {

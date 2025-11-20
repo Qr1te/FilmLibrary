@@ -26,10 +26,18 @@ public:
 private:
     void handleCollectionException(const std::exception& e) const;
     std::string qStringToStdString(const QString& str) const;
-    void handleMoreButtonClicked(const Movie& movie, const QPushButton* moreBtn);
-    void handleAddToCollection(const Movie& movie);
-    void handleRemoveFromCollection(const Movie& movie, const QStringList& collectionsWithMovie);
-    void handleDeleteMovie(const Movie& movie);
+    void handleMoreButtonClicked(const Movie& movie, const QPushButton* moreBtn) const;
+    void handleAddToCollection(const Movie& movie) const;
+    void handleRemoveFromCollection(const Movie& movie, const QStringList& collectionsWithMovie) const;
+    void handleDeleteMovie(const Movie& movie) const;
+    
+    // Helper functions to reduce complexity
+    QPushButton* createPlayButton() const;
+    QPushButton* createFavoriteButton(const Movie& movie) const;
+    QPushButton* createMoreButton() const;
+    QPushButton* createInfoButton() const;
+    void setupButtonConnections(QWidget* card, QPushButton* playBtn, QPushButton* favoriteBtn, 
+                                QPushButton* moreBtn, QPushButton* infoBtn, const Movie& movie) const;
     
     MovieManager* movieManager;
     PosterManager* posterManager;
