@@ -301,28 +301,27 @@ Movie Movie::fromString(const std::string& data) {
     }
 
     if (tokens.size() < 7) {
-        return Movie(0, "", 0.0, 0, std::vector<std::string>(), "", "", "", "", "", 0);
+        return MovieBuilder().build();
     }
     
     int id = MovieParser::parseId(tokens);
     if (id == 0) {
-        return Movie(0, "", 0.0, 0, std::vector<std::string>(), "", "", "", "", "", 0);
+        return MovieBuilder().build();
     }
     
-    std::string title = tokens.size() > 1 ? tokens[1] : "";
-    double rating = MovieParser::parseRating(tokens);
-    int year = MovieParser::parseYear(tokens);
-    std::vector<std::string> genres = MovieParser::parseGenres(tokens);
-    
-    std::string director = tokens.size() > 5 ? tokens[5] : "";
-    std::string description = tokens.size() > 6 ? tokens[6] : "";
-    std::string posterPath = tokens.size() > 7 ? tokens[7] : "";
-    std::string country = tokens.size() > 8 ? tokens[8] : "";
-    std::string actors = tokens.size() > 9 ? tokens[9] : "";
-    int duration = MovieParser::parseDuration(tokens);
-    
-    return Movie(id, title, rating, year, genres, director, description,
-                posterPath, country, actors, duration);
+    return MovieBuilder()
+        .setId(id)
+        .setTitle(tokens.size() > 1 ? tokens[1] : "")
+        .setRating(MovieParser::parseRating(tokens))
+        .setYear(MovieParser::parseYear(tokens))
+        .setGenres(MovieParser::parseGenres(tokens))
+        .setDirector(tokens.size() > 5 ? tokens[5] : "")
+        .setDescription(tokens.size() > 6 ? tokens[6] : "")
+        .setPosterPath(tokens.size() > 7 ? tokens[7] : "")
+        .setCountry(tokens.size() > 8 ? tokens[8] : "")
+        .setActors(tokens.size() > 9 ? tokens[9] : "")
+        .setDuration(MovieParser::parseDuration(tokens))
+        .build();
 }
 
 bool Movie::operator==(const Movie& other) const {

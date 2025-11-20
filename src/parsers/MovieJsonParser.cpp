@@ -328,7 +328,7 @@ int MovieJsonParser::parseDurationValue(const QJsonValue& value) {
     return 0;
 }
 
-int MovieJsonParser::extractDurationFromValue(const QJsonValue& value, const QString& key) {
+int MovieJsonParser::extractDurationFromValue(const QJsonValue& value, const QString& /*key*/) {
     if (value.type() == QJsonValue::Null || value.type() == QJsonValue::Undefined) {
         return 0;
     }

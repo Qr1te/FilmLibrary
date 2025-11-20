@@ -32,7 +32,7 @@ private:
     static QStringList extractActorsFromArray(const QJsonArray& actorsArray, int maxCount);
     static QStringList extractActorsFromCast(const QJsonArray& castArray, int maxCount);
     static bool isActorProfession(const QString& profession, const QString& professionRu);
-    static int extractDurationFromValue(const QJsonValue& value, const QString& key);
+    static int extractDurationFromValue(const QJsonValue& value, const QString& /*key*/);
 };
 
 #endif // BETA2_MOVIEJSONPARSER_H

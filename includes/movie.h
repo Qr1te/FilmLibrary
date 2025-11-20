@@ -18,6 +18,39 @@ public:
     static int parseDuration(const std::vector<std::string>& tokens);
 };
 
+class MovieBuilder {
+private:
+    int id = 0;
+    std::string title;
+    double rating = 0.0;
+    int year = 0;
+    std::vector<std::string> genres;
+    std::string director;
+    std::string description;
+    std::string posterPath;
+    std::string country;
+    std::string actors;
+    int duration = 0;
+
+public:
+    MovieBuilder& setId(int val) { id = val; return *this; }
+    MovieBuilder& setTitle(const std::string& val) { title = val; return *this; }
+    MovieBuilder& setRating(double val) { rating = val; return *this; }
+    MovieBuilder& setYear(int val) { year = val; return *this; }
+    MovieBuilder& setGenres(const std::vector<std::string>& val) { genres = val; return *this; }
+    MovieBuilder& setDirector(const std::string& val) { director = val; return *this; }
+    MovieBuilder& setDescription(const std::string& val) { description = val; return *this; }
+    MovieBuilder& setPosterPath(const std::string& val) { posterPath = val; return *this; }
+    MovieBuilder& setCountry(const std::string& val) { country = val; return *this; }
+    MovieBuilder& setActors(const std::string& val) { actors = val; return *this; }
+    MovieBuilder& setDuration(int val) { duration = val; return *this; }
+    
+    Movie build() const {
+        return Movie(id, title, rating, year, genres, director, description,
+                    posterPath, country, actors, duration);
+    }
+};
+
 class Movie {
 public:
     struct Data {
