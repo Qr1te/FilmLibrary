@@ -16,6 +16,13 @@ class CollectionRepository {
 private:
     std::string collectionsDirectory;
     
+    // Helper function to check if a string looks garbled
+    static bool isGarbled(const QString& str);
+    // Helper function to try reading collection name from file with different encodings
+    QString tryReadCollectionName(QFile& file) const;
+    // Helper function to delete corrupted file
+    void deleteCorruptedFile(const QString& filePath) const;
+    
 public:
     explicit CollectionRepository(const std::string& dir = "collections/");
     
