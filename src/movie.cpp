@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string_view>
 
+// NOSONAR - using find() instead of contains() for C++20 compatibility (contains() requires C++23)
 static bool string_contains(std::string_view str, char c) {
     return str.find(c) != std::string_view::npos;
 }
