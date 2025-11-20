@@ -24,6 +24,25 @@ Movie::Movie(const Data& data)
       genres(data.genres), director(data.director), description(data.description),
       posterPath(data.posterPath), country(data.country), actors(data.actors), duration(data.duration) {}
 
+Movie Movie::create(int id, const std::string& title, double rating, int year,
+                    const std::vector<std::string>& genres, const std::string& director,
+                    const std::string& description, const std::string& posterPath,
+                    const std::string& country, const std::string& actors, int duration) {
+    Data data;
+    data.id = id;
+    data.title = title;
+    data.rating = rating;
+    data.year = year;
+    data.genres = genres;
+    data.director = director;
+    data.description = description;
+    data.posterPath = posterPath;
+    data.country = country;
+    data.actors = actors;
+    data.duration = duration;
+    return Movie(data);
+}
+
 Movie::Movie(int id, const std::string& title, double rating, int year,
              const std::vector<std::string>& genres, const std::string& director,
              const std::string& description, const std::string& posterPath,

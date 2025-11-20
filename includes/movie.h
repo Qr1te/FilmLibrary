@@ -50,15 +50,16 @@ private:
 public:
     explicit Movie(const Data& data);
     
-    explicit Movie(int id = 0, const std::string& title = "", double rating = 0.0, int year = 0,
-          const std::vector<std::string>& genres = {}, const std::string& director = "",
-          const std::string& description = "", const std::string& posterPath = "",
-          const std::string& country = "", const std::string& actors = "", int duration = 0);
-
     Movie(int id, const std::string& title, double rating, int year,
           const std::string& genre, const std::string& director,
           const std::string& description);
 
+    // Static factory method to create Movie with all parameters
+    // This avoids the "too many parameters" code smell
+    static Movie create(int id, const std::string& title, double rating, int year,
+                        const std::vector<std::string>& genres, const std::string& director,
+                        const std::string& description, const std::string& posterPath,
+                        const std::string& country, const std::string& actors, int duration);
 
     int getId() const;
     const std::string& getTitle() const;
@@ -90,6 +91,12 @@ public:
     std::string toString() const;
     static Movie fromString(const std::string& data);
     bool hasGenre(std::string_view genre) const;
+
+private:
+    explicit Movie(int id, const std::string& title, double rating, int year,
+                   const std::vector<std::string>& genres, const std::string& director,
+                   const std::string& description, const std::string& posterPath,
+                   const std::string& country, const std::string& actors, int duration);
 
 private:
     bool operator==(const Movie& other) const;
