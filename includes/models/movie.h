@@ -9,21 +9,6 @@
 #include <compare>
 
 class Movie {
-public:
-    struct Data {
-        int id = 0;
-        std::string title;
-        double rating = 0.0;
-        int year = 0;
-        std::vector<std::string> genres;
-        std::string director;
-        std::string description;
-        std::string posterPath;
-        std::string country;
-        std::string actors;
-        int duration = 0;
-    };
-
 private:
     int id;
     std::string title;
@@ -38,7 +23,10 @@ private:
     int duration;
 
 public:
-    explicit Movie(const Data& data);
+    Movie(int id, const std::string& title, double rating, int year,
+          const std::vector<std::string>& genres, const std::string& director,
+          const std::string& description, const std::string& posterPath,
+          const std::string& country, const std::string& actors, int duration);
 
     Movie(int id, const std::string& title, double rating, int year,
           const std::string& genre, const std::string& director,
@@ -59,17 +47,7 @@ public:
     int getDuration() const;
 
     void setId(int newId);
-    void setTitle(std::string_view newTitle);
-    void setRating(double newRating);
-    void setYear(int newYear);
-    void setGenres(const std::vector<std::string>& newGenres);
-    void addGenre(std::string_view genre);
-    void setDirector(std::string_view newDirector);
-    void setDescription(std::string_view newDescription);
     void setPosterPath(std::string_view newPath);
-    void setCountry(std::string_view newCountry);
-    void setActors(std::string_view newActors);
-    void setDuration(int newDuration);
 
     void print() const;
     std::string toString() const;

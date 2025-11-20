@@ -16,10 +16,13 @@ static std::string trim(std::string_view str) {
     return std::string(str.substr(first, (last - first + 1)));
 }
 
-Movie::Movie(const Data& data)
-    : id(data.id), title(data.title), rating(data.rating), year(data.year),
-      genres(data.genres), director(data.director), description(data.description),
-      posterPath(data.posterPath), country(data.country), actors(data.actors), duration(data.duration) {}
+Movie::Movie(int id, const std::string& title, double rating, int year,
+             const std::vector<std::string>& genres, const std::string& director,
+             const std::string& description, const std::string& posterPath,
+             const std::string& country, const std::string& actors, int duration)
+    : id(id), title(title), rating(rating), year(year),
+      genres(genres), director(director), description(description),
+      posterPath(posterPath), country(country), actors(actors), duration(duration) {}
 
 Movie::Movie(int id, const std::string& title, double rating, int year,
              const std::string& genre, const std::string& director,
@@ -80,50 +83,8 @@ void Movie::setId(int newId) {
     id = newId;
 }
 
-void Movie::setTitle(std::string_view newTitle) {
-    title = std::string(newTitle);
-}
-
-void Movie::setRating(double newRating) {
-    rating = newRating;
-}
-
-void Movie::setYear(int newYear) {
-    year = newYear;
-}
-
-void Movie::setGenres(const std::vector<std::string>& newGenres) {
-    genres = newGenres;
-}
-
-void Movie::setDirector(std::string_view newDirector) {
-    director = std::string(newDirector);
-}
-
-void Movie::setDescription(std::string_view newDescription) {
-    description = std::string(newDescription);
-}
-
 void Movie::setPosterPath(std::string_view newPath) {
     posterPath = std::string(newPath);
-}
-
-void Movie::setCountry(std::string_view newCountry) {
-    country = std::string(newCountry);
-}
-
-void Movie::setActors(std::string_view newActors) {
-    actors = std::string(newActors);
-}
-
-void Movie::setDuration(int newDuration) {
-    duration = newDuration;
-}
-
-void Movie::addGenre(std::string_view genre) {
-    if (!genre.empty() && std::ranges::find(genres, std::string(genre)) == genres.end()) {
-        genres.emplace_back(genre);
-    }
 }
 
 std::string Movie::getGenreString() const {
@@ -209,29 +170,27 @@ Movie Movie::fromString(const std::string& data) {
         tokens.push_back(trimmed);
     }
 
-    Movie::Data movieData;
-    
     if (tokens.size() < 7) {
-        return Movie(movieData);
+        return Movie(0, "", 0.0, 0, {}, "", "", "", "", "", 0);
     }
     
-    movieData.id = MovieParser::parseId(tokens);
-    if (movieData.id == 0) {
-        return Movie(movieData);
+    int id = MovieParser::parseId(tokens);
+    if (id == 0) {
+        return Movie(0, "", 0.0, 0, {}, "", "", "", "", "", 0);
     }
     
-    movieData.title = tokens.size() > 1 ? tokens[1] : "";
-    movieData.rating = MovieParser::parseRating(tokens);
-    movieData.year = MovieParser::parseYear(tokens);
-    movieData.genres = MovieParser::parseGenres(tokens);
-    movieData.director = tokens.size() > 5 ? tokens[5] : "";
-    movieData.description = tokens.size() > 6 ? tokens[6] : "";
-    movieData.posterPath = tokens.size() > 7 ? tokens[7] : "";
-    movieData.country = tokens.size() > 8 ? tokens[8] : "";
-    movieData.actors = tokens.size() > 9 ? tokens[9] : "";
-    movieData.duration = MovieParser::parseDuration(tokens);
+    std::string title = tokens.size() > 1 ? tokens[1] : "";
+    double rating = MovieParser::parseRating(tokens);
+    int year = MovieParser::parseYear(tokens);
+    std::vector<std::string> genres = MovieParser::parseGenres(tokens);
+    std::string director = tokens.size() > 5 ? tokens[5] : "";
+    std::string description = tokens.size() > 6 ? tokens[6] : "";
+    std::string posterPath = tokens.size() > 7 ? tokens[7] : "";
+    std::string country = tokens.size() > 8 ? tokens[8] : "";
+    std::string actors = tokens.size() > 9 ? tokens[9] : "";
+    int duration = MovieParser::parseDuration(tokens);
     
-    return Movie(movieData);
+    return Movie(id, title, rating, year, genres, director, description, posterPath, country, actors, duration);
 }
 
 bool Movie::operator==(const Movie& other) const {

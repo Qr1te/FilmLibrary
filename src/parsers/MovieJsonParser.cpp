@@ -398,20 +398,10 @@ Movie MovieJsonParser::parseMovieFromJSON(const QJsonObject& json) {
         posterPath = "posters/" + QString::number(id) + ".jpg";
     }
     
-    Movie::Data movieData;
-    movieData.id = id;
-    movieData.title = name.toStdString();
-    movieData.rating = rating;
-    movieData.year = year;
-    movieData.genres = genres;
-    movieData.director = director.toStdString();
-    movieData.description = description.toStdString();
-    movieData.posterPath = posterPath.toStdString();
-    movieData.country = country.toStdString();
-    movieData.actors = actors.toStdString();
-    movieData.duration = duration;
-    
-    return Movie(movieData);
+    return Movie(id, name.toStdString(), rating, year, genres, 
+                 director.toStdString(), description.toStdString(),
+                 posterPath.toStdString(), country.toStdString(), 
+                 actors.toStdString(), duration);
 }
 
 QString MovieJsonParser::extractPosterUrl(const QJsonObject& movieJson) {

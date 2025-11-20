@@ -7,6 +7,10 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <QString>
+#include <QFile>
+#include <QTextStream>
+#include <QDir>
 
 class CollectionRepository {
 private:

@@ -7,6 +7,11 @@
 #include <cctype>
 #include <stdexcept>
 #include <iostream>
+#include <QString>
+#include <QFile>
+#include <QTextStream>
+#include <QIODevice>
+#include <QStringConverter>
 
 
 static bool string_view_contains(std::string_view str, char c) {
@@ -134,42 +139,75 @@ std::vector<int>::const_iterator MovieCollection::end() const {
 }
 
 void MovieCollection::save() const {
-    std::ofstream file(filename, std::ios::binary);
-    if (!file.is_open()) {
+    QFile file(QString::fromStdString(filename));
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         throw FileNotFoundException(filename);
     }
     
-    std::string nameLine = collectionName + "\n";
-    file.write(nameLine.c_str(), nameLine.size());
+    QTextStream out(&file);
+    out.setEncoding(QStringConverter::Encoding::Utf8);
+    // Convert std::string (assumed to be UTF-8) to QString
+    QString name = QString::fromUtf8(collectionName.c_str(), static_cast<int>(collectionName.length()));
+    out << name << "\n";
     
     for (int id : movieIds) {
-        file << id << "\n";
+        out << id << "\n";
     }
+    
+    file.close();
 }
 
 void MovieCollection::load() {
     movieIds.clear();
     
-    std::ifstream file(filename, std::ios::binary);
-    if (!file.is_open()) {
+    QFile file(QString::fromStdString(filename));
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         return;
     }
 
-    int id;
-    while (file >> id) {
-        if (file.fail()) {
-            break;
-        }
-        if (allMoviesRef) {
-            bool exists = std::ranges::any_of(*allMoviesRef,
-                                     [id](const Movie& m) { return m.getId() == id; });
-            if (exists) {
-                movieIds.push_back(id);
+    QTextStream in(&file);
+    in.setEncoding(QStringConverter::Encoding::Utf8);
+    
+    // Read collection name from first line
+    QString line = in.readLine();
+    if (!line.isEmpty()) {
+        // Update collection name from file if it was saved there
+        bool isNumber = false;
+        line.toInt(&isNumber);
+        
+        if (!isNumber) {
+            QByteArray utf8 = line.toUtf8();
+            std::string nameFromFile(utf8.constData(), utf8.length());
+            if (nameFromFile != collectionName) {
+                // It's a name, update it
+                collectionName = nameFromFile;
             }
-        } else {
-            movieIds.push_back(id);
         }
     }
+
+    // Read movie IDs
+    while (!in.atEnd()) {
+        QString line = in.readLine().trimmed();
+        if (line.isEmpty()) {
+            continue;
+        }
+        
+        bool ok = false;
+        int id = line.toInt(&ok);
+        if (ok) {
+            if (allMoviesRef) {
+                bool exists = std::ranges::any_of(*allMoviesRef,
+                                         [id](const Movie& m) { return m.getId() == id; });
+                if (exists) {
+                    movieIds.push_back(id);
+                }
+            } else {
+                movieIds.push_back(id);
+            }
+        }
+    }
+    
+    file.close();
 }
 
 

@@ -424,10 +424,22 @@ void MainWindow::populateFavorites() {
 
 void MainWindow::populateCollections() {
     tabCollectionsUI.collectionComboBox->clear();
+    
+    // Force reload collections to pick up any deleted corrupted files
+    manager.getCollectionService()->reload();
+    
     auto collectionNames = manager.getAllCollectionNames();
     
     for (const auto& name : collectionNames) {
-        tabCollectionsUI.collectionComboBox->addItem(QString::fromUtf8(name.c_str(), name.length()));
+        QString qName = QString::fromUtf8(name.c_str(), name.length());
+        // Double-check: don't add obviously garbled names
+        QString upperName = qName.toUpper();
+        bool isGarbled = upperName.contains("P B") || qName.contains("Р ") || qName.contains("вЂ") ||
+                        (qName.contains("--") && qName.length() <= 6) ||
+                        upperName == "P B--" || upperName.startsWith("P B");
+        if (!isGarbled) {
+            tabCollectionsUI.collectionComboBox->addItem(qName);
+        }
     }
     
     if (tabCollectionsUI.collectionComboBox->count() > 0) {
@@ -443,7 +455,7 @@ std::string MainWindow::qStringToStdString(const QString& str) const {
 }
 
 QString MainWindow::stdStringToQString(const std::string& str) const {
-    return QString::fromStdString(str);
+    return QString::fromUtf8(str.c_str(), static_cast<int>(str.length()));
 }
 
 QString MainWindow::findPosterDirectory() const {
@@ -711,12 +723,12 @@ void MainWindow::handleAddMovie() {
 
 void MainWindow::handleSortByRating() {
     try {
-        manager.sortByRating();
+        auto sortedMovies = manager.sortByRatingResults();
         isSortedByRating = true;
-        populateAllMovies(manager.getAllMovies());
-        statusbar->showMessage("Sorted by rating", 2000);
+        populateAllMovies(sortedMovies);
+        statusbar->showMessage("Отсортировано по рейтингу", 2000);
     } catch (const MovieException& e) {
-        QMessageBox::warning(this, "Sort error", e.what());
+        QMessageBox::warning(this, "Ошибка сортировки", QString::fromUtf8(e.what()));
     }
 }
 

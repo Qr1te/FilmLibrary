@@ -1,5 +1,6 @@
 #include "managers/MovieManager.h"
 #include "exceptions/FileNotFoundException.h"
+#include "exceptions/DuplicateCollectionException.h"
 #include <iostream>
 #include <algorithm>
 #include <cctype>
@@ -85,6 +86,19 @@ void MovieManager::sortByRating() const {
     }
 
     std::cout << "Movies sorted by rating!\n";
+}
+
+std::vector<Movie> MovieManager::sortByRatingResults() const {
+    std::vector<Movie> movies = movieService->getAllMovies();
+    if (movies.empty()) {
+        throw MovieException("No movies to sort");
+    }
+    
+    std::ranges::sort(movies, [](const Movie& a, const Movie& b) {
+        return a.getRating() > b.getRating();
+    });
+    
+    return movies;
 }
 
 void MovieManager::showTopRated(int count) const {
@@ -212,12 +226,25 @@ void MovieManager::copyCollectionToAdapter(const std::string& name, CollectionMa
         return;
     }
     
-    adapter->createCollection(name);
+    // Check if collection already exists in adapter
     MovieCollection* adapterColl = adapter->getCollection(name);
+    if (!adapterColl) {
+        // Collection doesn't exist, create it
+        try {
+            adapter->createCollection(name);
+            adapterColl = adapter->getCollection(name);
+        } catch (const DuplicateCollectionException&) {
+            // Collection already exists, just get it
+            adapterColl = adapter->getCollection(name);
+        }
+    }
+    
     if (!adapterColl) {
         return;
     }
     
+    // Clear existing movies and add all from source collection
+    adapterColl->clear();
     auto movies = coll->getMovies();
     for (const auto& movie : movies) {
         adapterColl->addMovie(movie);
@@ -235,6 +262,9 @@ void MovieManager::syncCollectionAdapter() const {
             copyCollectionToAdapter(name, collectionManagerAdapter.get());
         } catch (const CollectionNotFoundException& e) {
             std::cerr << "Warning: Collection not found during adapter sync: " << e.what() << std::endl;
+        } catch (const DuplicateCollectionException&) {
+            // Collection already exists in adapter, this is normal - copyCollectionToAdapter handles it
+            // Just continue to next collection
         } catch (const MovieException& e) {
             std::cerr << "Warning: Error syncing collection adapter: " << e.what() << std::endl;
         }
