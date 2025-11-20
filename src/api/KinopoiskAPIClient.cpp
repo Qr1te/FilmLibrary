@@ -47,8 +47,7 @@ void KinopoiskAPIClient::searchMovie(const QString& title,
     request.setRawHeader("Accept", "application/json");
     request.setRawHeader("X-API-KEY", apiKey.toUtf8());
     
-    const QNetworkReply* reply = networkManager->get(request);
-    connect(const_cast<QNetworkReply*>(reply), &QNetworkReply::finished, this, &KinopoiskAPIClient::onSearchFinished);
+    connect(networkManager->get(request), &QNetworkReply::finished, this, &KinopoiskAPIClient::onSearchFinished);
 }
 
 void KinopoiskAPIClient::onSearchFinished() {
@@ -116,8 +115,7 @@ void KinopoiskAPIClient::fetchMovieDetails(int movieId) {
     detailRequest.setRawHeader("Accept", "application/json");
     detailRequest.setRawHeader("X-API-KEY", apiKey.toUtf8());
     
-    const QNetworkReply* detailReply = networkManager->get(detailRequest);
-    connect(const_cast<QNetworkReply*>(detailReply), &QNetworkReply::finished, this, &KinopoiskAPIClient::onDetailFinished);
+    connect(networkManager->get(detailRequest), &QNetworkReply::finished, this, &KinopoiskAPIClient::onDetailFinished);
 }
 
 void KinopoiskAPIClient::onDetailFinished() const {
