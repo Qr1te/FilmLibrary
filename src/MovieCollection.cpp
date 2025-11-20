@@ -9,8 +9,7 @@
 #include <iostream>
 
 // Helper function for C++20 compatibility (contains() is C++23)
-// NOSONAR - using find() instead of contains() for C++20 compatibility (contains() requires C++23)
-static bool string_view_contains(std::string_view str, char c) {
+static bool string_view_contains(std::string_view str, char c) { // NOSONAR: S6589 C++20 compatibility
     return str.find(c) != std::string_view::npos;
 }
 
