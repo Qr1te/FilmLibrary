@@ -1,5 +1,10 @@
 # 🎬 Film Library - Домашняя фильмотека
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Qr1te_FilmLibrary&branch=master&metric=alert_status)](https://sonarcloud.io/summary/overall?id=Qr1te_FilmLibrary&branch=master)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Qr1te_FilmLibrary&branch=master&metric=coverage)](https://sonarcloud.io/summary/overall?id=Qr1te_FilmLibrary&branch=master)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Qr1te_FilmLibrary&branch=master&metric=bugs)](https://sonarcloud.io/summary/overall?id=Qr1te_FilmLibrary&branch=master)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=Qr1te_FilmLibrary&branch=master&metric=vulnerabilities)](https://sonarcloud.io/summary/overall?id=Qr1te_FilmLibrary&branch=master)
+
 **Курсовой проект по дисциплине "Программирование на языках высокого уровня"**
 
 Современное приложение для управления коллекцией фильмов с интеграцией **Kinopoisk API**, интуитивным графическим интерфейсом и автоматической загрузкой постеров. Разработано на **Qt6** и **C++23**.
